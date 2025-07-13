@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Button, Container, Grid, Link, Paper, TextField, Typography, styled } from '@mui/material';
+import { Box, Button, Container, Grid, Link, Paper, TextField, Typography } from '@mui/material';
 import MailIcon from '@mui/icons-material/Mail';
 
 /* sx={{marginTop: 8, padding: 2}} is a common way to apply inline styling in Material-UI 
@@ -136,9 +136,13 @@ const SignUpForm = () => {
                     Sign Up
                 </Button>
 
-                <Grid container justifyContent="center" sx={{mt: 3, mb:1.25}} alignItems="center">
-                  <Grid item>
-                      <Link component="button" sx={{ fontFamily: 'Arial, sans-serif', fontSize: '16px', color: 'black', textDecoration: 'none' }}>Already Have An Account? Sign In</Link>
+                <Grid container justifyItems="center" justifyContent="center" sx={{mt: 3, mb:1.25}} alignItems="center" spacing={2}>
+                  <Grid item xs={6}>
+                      <Typography sx={{ fontFamily: 'Arial, sans-serif', fontSize: '16px', color: 'black', textDecoration: 'none' }}>Already Have An Account?</Typography>
+                  </Grid>
+
+                  <Grid item xs={6}>
+                      <Link component="button" sx={{ fontFamily: 'Arial, sans-serif', fontSize: '16px', color: 'black', textDecoration: 'none', '&:hover': {textDecoration: 'underline',}, }}>Sign In</Link>
                   </Grid>
                 </Grid>
             </Box>
