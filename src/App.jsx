@@ -41,7 +41,13 @@ function App() {
         <AppBar elevation={0} sx={{ bgcolor: themeMode === 'light' ? '#f4efefff' : '#000000', px: '7%', py: 1.5,}}>
             <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Box>
-                <img src={themeMode === 'light' ? logo_light : logo_dark} alt="logo" style={{ width: '50px', marginLeft: '40px', filter: themeMode === 'light' ? 'none' : 'brightness(0) invert(1)', cursor: 'pointer',}}/>
+                <Stack direction="column" spacing={1} alignItems='center'>
+                  <img src={themeMode === 'light' ? logo_light : logo_dark} alt="logo" style={{ width: '50px', filter: themeMode === 'light' ? 'none' : 'brightness(0) invert(1)', cursor: 'pointer',}}/>
+
+                  <Typography variant="h6" component="div" sx={{ color: themeMode === 'light' ? 'black': 'white', mt: 0.5, fontWeight: 550,}}>
+                      Nutrify
+                  </Typography>
+                </Stack>
               </Box>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
