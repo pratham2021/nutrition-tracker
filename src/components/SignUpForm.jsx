@@ -137,7 +137,7 @@ const SignUpForm = ({theme}) => {
                   fullWidth required
                 />
 
-                <Button type="submit" variant="contained" fullWidth sx={{ backgroundColor: 'rgba(78, 196, 4, 1)', mt: 1, color: theme === 'dark' ? 'white':'black', textTransform: 'none', fontSize: '18px', padding: '6px 12px', minWidth: 'auto'}} >
+                <Button type="submit" variant="contained" fullWidth sx={{ backgroundColor: 'rgba(78, 196, 4, 1)', mt: 1, color: theme === 'light' ? 'black':'white', textTransform: 'none', fontSize: '18px', padding: '6px 12px', minWidth: 'auto'}} >
                     Sign Up
                 </Button>
             </Box>

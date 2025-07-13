@@ -1,15 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AppBar, Toolbar, Typography, Box, Stack, Button } from '@mui/material';
-import logo_dark from '../assets/smoothie-dark.png';
-import logo_light from '../assets/smoothie-light.png';
-import toggle_dark from '../assets/day.png';
-import toggle_light from '../assets/night.png';
+// import logo_dark from '../assets/smoothie-dark.png';
+// import logo_light from '../assets/smoothie-light.png';
+// import toggle_dark from '../assets/day.png';
+// import toggle_light from '../assets/night.png';
 
 const NewNavBar = ({ theme, toggleTheme }) => {
   const isLight = theme === 'light';
 
+  const [signInPressed, setSignInPressed] = useState(false);
+  const [signUpPressed, setSignUpPressed] = useState(false);
+
   return (
-    <AppBar elevation={0} sx={{ bgcolor: isLight ? '#ffffff' : '#000000', px: '7%', py: 1.5,}}>
+    <AppBar elevation={0} sx={{ bgcolor: isLight ? '#f4efefff' : '#000000', px: '7%', py: 1.5,}}>
       <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
           <img src={isLight ? logo_light : logo_dark} alt="logo" style={{ width: '50px', marginLeft: '40px', filter: isLight ? 'none' : 'brightness(0) invert(1)', cursor: 'pointer',}}/>
