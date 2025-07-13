@@ -8,6 +8,7 @@ padding: 2 sets the padding on all sides of the component (two pixels on all sid
 */
 
 const SignUpForm = () => {
+
   return (
     <Container maxWidth="xs">
         <Paper elevation={10} sx={{ borderRadius: '20px', marginTop: 8, padding: 2, textAlign: 'center'}}>
@@ -18,14 +19,14 @@ const SignUpForm = () => {
             <Box component="form" noValidate sx={{mt: 1}}>
                 <TextField placeholder="Username"  variant="standard" InputLabelProps={{
                     style: {
-                      color: 'rgba(6, 167, 6, 1)',
+                      color: 'rgba(78, 196, 4, 1)',
                     },
                   }}
                   InputProps={{
                     disableUnderline: true,
                     style: {
                       color: 'black',
-                      borderBottom: '2px solid rgba(6, 167, 6, 1)',
+                      borderBottom: '2px solid rgba(78, 196, 4, 1)',
                     },
                   }}
 
@@ -42,14 +43,14 @@ const SignUpForm = () => {
 
                 <TextField placeholder="First Name"  variant="standard" InputLabelProps={{
                     style: {
-                      color: 'rgba(6, 167, 6, 1)',
+                      color: 'rgba(78, 196, 4, 1)',
                     },
                   }}
                   InputProps={{
                     disableUnderline: true,
                     style: {
                       color: 'black',
-                      borderBottom: '2px solid rgba(6, 167, 6, 1)',
+                      borderBottom: '2px solid rgba(78, 196, 4, 1)',
                     },
                   }}
 
@@ -65,14 +66,14 @@ const SignUpForm = () => {
 
                 <TextField placeholder="Last Name"  variant="standard" InputLabelProps={{
                     style: {
-                      color: 'rgba(6, 167, 6, 1)',
+                      color: 'rgba(78, 196, 4, 1)',
                     },
                   }}
                   InputProps={{
                     disableUnderline: true,
                     style: {
                       color: 'black',
-                      borderBottom: '2px solid rgba(6, 167, 6, 1)',
+                      borderBottom: '2px solid rgba(78, 196, 4, 1)',
                     },
                   }}
 
@@ -88,14 +89,14 @@ const SignUpForm = () => {
 
                 <TextField type="email" placeholder="Email" variant="standard" InputLabelProps={{
                     style: {
-                      color: 'rgba(6, 167, 6, 1)',
+                      color: 'rgba(78, 196, 4, 1))',
                     },
                   }}
                   InputProps={{
                     disableUnderline: true,
                     style: {
                       color: 'black',
-                      borderBottom: '2px solid rgba(6, 167, 6, 2)',
+                      borderBottom: '2px solid rgba(78, 196, 4, 1)',
                     },
                   }}
 
@@ -111,14 +112,14 @@ const SignUpForm = () => {
 
                 <TextField type="password" placeholder="Password" autoComplete="current-password" variant="standard" InputLabelProps={{
                     style: {
-                      color: 'rgb(5, 155, 5)',
+                      color: 'rgba(78, 196, 4, 1)',
                     },
                   }}
                   InputProps={{
                     disableUnderline: true,
                     style: {
                       color: 'black',
-                      borderBottom: '2px solid rgba(6, 167, 6, 1)',
+                      borderBottom: '2px solid rgba(78, 196, 4, 1)',
                     },
                   }}
 
@@ -132,13 +133,13 @@ const SignUpForm = () => {
                   fullWidth required
                 />
 
-                <Button type="submit" variant="contained" fullWidth sx={{ backgroundColor: 'rgba(6, 167, 6, 1)', mt: 1, color: 'rgba(255, 255, 255, 1)', textTransform: 'none', fontSize: '18px', padding: '6px 12px', minWidth: 'auto'}} >
+                <Button type="submit" variant="contained" fullWidth sx={{ backgroundColor: 'rgba(78, 196, 4, 1)', mt: 1, color: 'rgba(255, 255, 255, 1)', textTransform: 'none', fontSize: '18px', padding: '6px 12px', minWidth: 'auto'}} >
                     Sign Up
                 </Button>
 
                 <Grid container justifyItems="center" justifyContent="center" sx={{mt: 3, mb:1.25}} alignItems="center" spacing={2}>
                   <Grid item xs={6}>
-                      <Typography sx={{ fontFamily: 'Arial, sans-serif', fontSize: '16px', color: 'black', textDecoration: 'none' }}>Already Have An Account?</Typography>
+                      <Typography sx={{ fontFamily: 'Arial, sans-serif', fontSize: '16px', color: 'black', textDecoration: 'none' }}>Already have an account?</Typography>
                   </Grid>
 
                   <Grid item xs={6}>
