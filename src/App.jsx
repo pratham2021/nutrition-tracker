@@ -20,36 +20,14 @@ function App() {
   }), [themeMode]);
 
   return (
-    // <ThemeProvider theme={theme}>
-    //   <CssBaseline />
-    //   <NewNavBar theme={themeMode} toggleTheme={toggleTheme} />
-
-
-
-    //   <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -55%)'}}>
-    //       <SignUpForm/>
-    //   </div>
-    // </ThemeProvider>
-
     <ThemeProvider theme={theme}>
-      <CssBaseline />
+      <CssBaseline/>
       <NewNavBar theme={themeMode} toggleTheme={toggleTheme} />
-
       <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -55%)'}}>
-           <SignUpForm/>
+           <SignUpForm theme={themeMode}/>
       </div>
     </ThemeProvider>
   );
-
-
-  // return (
-  //   <Fragment>
-  //     <NavBar></NavBar>
-  //     <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -55%)'}}>
-  //       <SignUpForm/>
-  //     </div>
-  //   </Fragment> 
-  // );
 }
 
 export default App;
