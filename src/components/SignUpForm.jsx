@@ -7,15 +7,6 @@ marginTop: 8 sets the top margin of the component (64 pixels off the top)
 padding: 2 sets the padding on all sides of the component (two pixels on all sides)
 */
 
-const GreenStandardTextField = styled(TextField)({
-  '& label.Mui-focused': {
-    color: 'green',
-  },
-  '& .MuiInput-underline:after': {
-    borderBottomColor: 'green',
-  },
-});
-
 const SignUpForm = () => {
   return (
     <Container maxWidth="xs">
@@ -39,6 +30,7 @@ const SignUpForm = () => {
                   }}
 
                   sx={{
+                    mt: 1.5,
                     mb: 3,
                     '& input::placeholder': {
                       color: 'black',
