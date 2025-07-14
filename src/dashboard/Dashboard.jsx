@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { AppBar, Button, Toolbar, Typography, Box, createTheme, CssBaseline, Stack, ThemeProvider} from '@mui/material';
-import { auth } from "../firebase.js";
-import { signOut, onAuthStateChanged } from 'firebase/auth';
+import { app, auth, db } from "../firebase.js";
+import { deleteUser, onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, deleteDoc } from "firebase/firestore";
 import { useLocation, useNavigate } from 'react-router-dom';
 import logo_dark from '../assets/smoothie-dark.png';
 import logo_light from '../assets/smoothie-light.png';
@@ -24,8 +25,18 @@ const Dashboard = () => {
         },
     }), [themeMode]);
 
-    const handleAccountDeletion = () => {
+    const handleAccountDeletion = async () => {
+        if (!user) {
+            console.error("No user is signed in.");
+            return;
+        }
 
+        try {
+            // await deleteDoc(doc(db, "users", user.uid));
+            // await deleteUser(user);
+        } catch (error) {
+            console.log(error);
+        }
     };
 
     const handleSignOut = () => {
