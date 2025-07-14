@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Button, Container, Grid, Link, Paper, TextField, Typography } from '@mui/material';
 import MailIcon from '@mui/icons-material/Mail';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { app, auth, db } from "../firebase.js";
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 
 /* sx={{marginTop: 8, padding: 2}} is a common way to apply inline styling in Material-UI 
 marginTop: 8 sets the top margin of the component (64 pixels off the top)
@@ -11,13 +13,29 @@ padding: 2 sets the padding on all sides of the component (two pixels on all sid
 */
 
 const SignUpForm = ({theme}) => {
-
+  
+  const [user, setUser] = useState(null);
   const [userName, setUserName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+    })
+
+    return () => unsubscribe();
+  }, [])
+
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   async function addDocument(docId, data) {
       try {
@@ -83,6 +101,7 @@ const SignUpForm = ({theme}) => {
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
         // Route to the dashboard page after a 2 second delay
+        navigate('/dashboard');
     }
     catch (error) {
         console.log(error);

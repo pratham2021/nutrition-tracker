@@ -2,16 +2,32 @@ import React, { useState }  from 'react';
 import { Box, Button, Container, Grid, Link, Paper, TextField, Typography } from '@mui/material';
 import MailIcon from '@mui/icons-material/Mail';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { app, auth } from "../firebase.js";
-import { useSignInWithEmailAndPassword, useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from "../firebase.js";
+import { onAuthStateChanged } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 
 const SignInForm = ({theme}) => {
 
-  const [signInpressed, setSignInPressed] = useState(false);
+  const [user, setUser] = useState(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState([]);
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+    })
+  
+    return () => unsubscribe();
+  }, [])
+  
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -32,17 +48,18 @@ const SignInForm = ({theme}) => {
         }
 
         await signInWithEmailAndPassword(auth, email, password).then((userCredential) => {
-          setEmail('');
-          setPassword('');
+            setEmail('');
+            setPassword('');
         })
         .catch((error) => {
-          const errorCode = error.code;
-          const errorMessage = error.message;
-          console.log('Error signing in:');
+            // Display an error message
+            console.log('Error signing in:');
         });
         
         // Route to the dashboard page
-        
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        navigate('/dashboard');
     }
     catch (error) {
         console.log(error);
