@@ -5,7 +5,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { app, auth, db } from "../firebase.js";
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 /* sx={{marginTop: 8, padding: 2}} is a common way to apply inline styling in Material-UI 
 marginTop: 8 sets the top margin of the component (64 pixels off the top)
@@ -22,6 +22,7 @@ const SignUpForm = ({theme}) => {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState([]);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -32,10 +33,10 @@ const SignUpForm = ({theme}) => {
   }, [])
 
   useEffect(() => {
-    if (user) {
+    if (user && location.pathname !== '/dashboard') {
       navigate('/dashboard');
     }
-  }, [user, navigate]);
+  }, [user, navigate, location.pathname]);
 
   async function addDocument(docId, data) {
       try {
@@ -97,11 +98,6 @@ const SignUpForm = ({theme}) => {
         setLastName('');
         setEmail('');
         setPassword('');
-
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-
-        // Route to the dashboard page after a 2 second delay
-        navigate('/dashboard');
     }
     catch (error) {
         console.log(error);

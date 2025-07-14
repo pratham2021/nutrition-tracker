@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { AppBar, Button, Toolbar, Typography, Box, createTheme, CssBaseline, Stack, ThemeProvider} from '@mui/material';
 import { auth } from "../firebase.js";
-import { onAuthStateChanged } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
+import { useLocation, useNavigate } from 'react-router-dom';
 import logo_dark from '../assets/smoothie-dark.png';
 import logo_light from '../assets/smoothie-light.png';
 import toggle_dark from '../assets/day.png';
@@ -29,23 +29,24 @@ const Dashboard = () => {
     };
 
     const handleSignOut = () => {
-
+        signOut(auth).then(() => {
+            navigate("/");
+        })
+        .catch((error) => {
+            console.error("Logout error:", error);
+        })
     };
 
     useEffect(() => {
-
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            setUser(currentUser);
-        })
-      
-        return () => unsubscribe();
-    }, [])
-      
-      useEffect(() => {
-        if (!user) {
-          navigate('/');
-        }
-      }, [user, navigate]);
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                setUser(user);
+            } else {
+                setUser(null);
+                navigate("/");
+            }
+        });
+    }, []);
     
     return (
     <>

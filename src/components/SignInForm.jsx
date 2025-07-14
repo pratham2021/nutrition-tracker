@@ -4,34 +4,48 @@ import MailIcon from '@mui/icons-material/Mail';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from "../firebase.js";
 import { onAuthStateChanged } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const SignInForm = ({theme}) => {
 
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [forgotPassword, setForgotPassword] = useState(false);
   const [errors, setErrors] = useState([]);
   const navigate = useNavigate();
+  const location = useLocation();
   
+  // useEffect(() => {
+  //   const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+  //       setUser(currentUser);
+  //   })
+  
+  //   return () => unsubscribe();
+  // }, []);
+  
+  // useEffect(() => {
+  //   if (user && location.pathname !== '/dashboard') {
+  //     navigate('/dashboard');
+  //   }
+  // }, [user, navigate, location.pathname]);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
         setUser(currentUser);
     })
   
     return () => unsubscribe();
-  }, [])
+  }, []);
   
   useEffect(() => {
-    if (user) {
+    if (user && location.pathname !== '/dashboard') {
       navigate('/dashboard');
     }
-  }, [user, navigate]);
-
+  }, [user, navigate, location.pathname]);
 
   const handleSignIn = async (e) => {
     e.preventDefault();
-
     const input = [];
 
     if (email === "") {
@@ -43,23 +57,13 @@ const SignInForm = ({theme}) => {
     }
 
     try {
-        if (email === "" || password === "") {
-            return;
-        }
+      if (email === "" || password === "") {
+          return;
+      }
 
-        await signInWithEmailAndPassword(auth, email, password).then((userCredential) => {
-            setEmail('');
-            setPassword('');
-        })
-        .catch((error) => {
-            // Display an error message
-            console.log('Error signing in:');
-        });
-        
-        // Route to the dashboard page
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-
-        navigate('/dashboard');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      setEmail('');
+      setPassword('');
     }
     catch (error) {
         console.log(error);
@@ -75,7 +79,7 @@ const SignInForm = ({theme}) => {
                     Sign In
                   </Typography>
                   <Box component="form" noValidate sx={{mt: 1}}>
-                      <TextField type="email" placeholder="Email" variant="standard" InputLabelProps={{
+                      <TextField type="email"  value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" variant="standard" InputLabelProps={{
                           style: {
                             color: 'rgba(78, 196, 4, 1)',
                           },
@@ -98,7 +102,7 @@ const SignInForm = ({theme}) => {
                         fullWidth required
                       />
 
-                      <TextField type="password" placeholder="Password" autoComplete="current-password" variant="standard" InputLabelProps={{
+                      <TextField type="password" value={password} placeholder="Password" autoComplete="current-password" onChange={(e) => setPassword(e.target.value)} variant="standard" InputLabelProps={{
                           style: {
                             color: 'rgba(78, 196, 4, 1)',
                           },
@@ -127,7 +131,7 @@ const SignInForm = ({theme}) => {
 
                       <Grid container justifyItems="center" justifyContent="center" sx={{mt: 3, mb:1.25}} alignItems="center" spacing={2}>
                         <Grid item xs={6}>
-                            <Button component="button" sx={{ fontFamily: 'Arial, sans-serif', fontSize: '16px', color: theme === 'light' ? 'black':'white', textTransform: 'none', '&:hover': {textDecoration: 'underline',}, }}>Forgot Password?</Button>
+                            <Button disableRipple disableElevation component="button" sx={{ backgroundColor: 'transparent', fontFamily: 'Arial, sans-serif', fontSize: '16px', color: theme === 'light' ? 'black':'white', textTransform: 'none', '&:hover': { color: theme === 'light' ? 'black': 'white', backgroundColor: 'transparent', textDecoration: 'underline',}, }}>Forgot Password?</Button>
                         </Grid>
                       </Grid>
                   </Box>
@@ -137,3 +141,7 @@ const SignInForm = ({theme}) => {
 }
 
 export default SignInForm;
+
+      // color: theme === 'light' ? 'black' : 'white', // prevent color change
+      // backgroundColor: 'transparent',              // prevent background change
+      // textDecoration: 'underline',
