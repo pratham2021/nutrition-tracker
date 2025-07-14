@@ -1,5 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { AppBar, Button, Toolbar, Typography, Box, createTheme, CssBaseline, Stack, ThemeProvider} from '@mui/material';
+import { auth } from "../firebase.js";
+import { onAuthStateChanged } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 import logo_dark from '../assets/smoothie-dark.png';
 import logo_light from '../assets/smoothie-light.png';
 import toggle_dark from '../assets/day.png';
@@ -7,7 +10,9 @@ import toggle_light from '../assets/night.png';
 
 const Dashboard = () => {
 
+    const [user, setUser] = useState(null);
     const [themeMode, setThemeMode] = useState('light');
+    const navigate = useNavigate();
     
     const toggleTheme = () => {
         setThemeMode((prev) => (prev === 'light' ? 'dark' : 'light'));
@@ -26,6 +31,21 @@ const Dashboard = () => {
     const handleSignOut = () => {
 
     };
+
+    useEffect(() => {
+
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+        })
+      
+        return () => unsubscribe();
+    }, [])
+      
+      useEffect(() => {
+        if (!user) {
+          navigate('/');
+        }
+      }, [user, navigate]);
     
     return (
     <>

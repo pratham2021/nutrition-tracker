@@ -28,7 +28,7 @@ function App() {
     };
 
     const handleSignUp = () => {
-      setSignInPressed(false);
+        setSignInPressed(false);
     }
 
     return (

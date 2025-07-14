@@ -1,4 +1,4 @@
-import React, { useState }  from 'react';
+import React, { useState, useEffect }  from 'react';
 import { Box, Button, Container, Grid, Link, Paper, TextField, Typography } from '@mui/material';
 import MailIcon from '@mui/icons-material/Mail';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -127,7 +127,7 @@ const SignInForm = ({theme}) => {
 
                       <Grid container justifyItems="center" justifyContent="center" sx={{mt: 3, mb:1.25}} alignItems="center" spacing={2}>
                         <Grid item xs={6}>
-                            <Link component="button" sx={{ fontFamily: 'Arial, sans-serif', fontSize: '16px', color: theme === 'light' ? 'black':'white', textDecoration: 'none', '&:hover': {textDecoration: 'underline',}, }}>Forgot Password?</Link>
+                            <Button component="button" sx={{ fontFamily: 'Arial, sans-serif', fontSize: '16px', color: theme === 'light' ? 'black':'white', textTransform: 'none', '&:hover': {textDecoration: 'underline',}, }}>Forgot Password?</Button>
                         </Grid>
                       </Grid>
                   </Box>
