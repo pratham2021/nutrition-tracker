@@ -1,10 +1,53 @@
 import React, { useState }  from 'react';
 import { Box, Button, Container, Grid, Link, Paper, TextField, Typography } from '@mui/material';
 import MailIcon from '@mui/icons-material/Mail';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { app, auth } from "../firebase.js";
+import { useSignInWithEmailAndPassword, useAuthState } from 'react-firebase-hooks/auth';
 
 const SignInForm = ({theme}) => {
 
-  const [pressed, setPressed] = useState(false);
+  const [signInpressed, setSignInPressed] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState({ email: '', password: '' });
+  const [errors, setErrors] = useState([]);
+
+  const handleSignIn = async (e) => {
+    e.preventDefault();
+
+    const input = [];
+
+    if (email === "") {
+        input.push("Email field can't be empty.");
+    }
+    
+    if (password === "") {
+        input.push("Email field can't be empty.");
+    }
+
+    try {
+        if (email === "" || password === "") {
+            return;
+        }
+
+        await signInWithEmailAndPassword(auth, email, password).then((userCredential) => {
+          setEmail('');
+          setPassword('');
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          console.log('Error signing in:');
+        });
+        
+        // Route to the dashboard page
+        
+    }
+    catch (error) {
+        console.log(error);
+    }
+  }
   
   return (
           <Container maxWidth="xs">
@@ -61,7 +104,7 @@ const SignInForm = ({theme}) => {
                         fullWidth required
                       />
 
-                      <Button type="submit" variant="contained" fullWidth sx={{ backgroundColor: 'rgba(78, 196, 4, 1)', mt: 1, color: theme === 'light' ? 'black':'white', textTransform: 'none', fontSize: '18px', padding: '6px 12px', minWidth: 'auto'}} >
+                      <Button onClick={handleSignIn} type="submit" variant="contained" fullWidth sx={{ backgroundColor: 'rgba(78, 196, 4, 1)', mt: 1, color: theme === 'light' ? 'black':'white', textTransform: 'none', fontSize: '18px', padding: '6px 12px', minWidth: 'auto'}} >
                           Sign In
                       </Button>
 
