@@ -41,7 +41,7 @@ function App() {
                       <img src={themeMode === 'light' ? logo_light : logo_dark} alt="logo" style={{ width: '36px', filter: themeMode === 'light' ? 'none' : 'brightness(0) invert(1)', cursor: 'pointer',}}/>
 
                       <Typography variant="h6" component="div" sx={{ fontSize: '1rem', color: themeMode === 'light' ? 'black': 'white', mt: '0px', fontWeight: 550, textAlign: 'center' }}>
-                          Nutrify
+                          NutriLife
                       </Typography>
                     </Stack>
                   </Box>
