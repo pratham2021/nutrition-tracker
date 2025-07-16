@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { AppBar, Button, Toolbar, Typography, Box, createTheme, CssBaseline, Stack, ThemeProvider} from '@mui/material';
 import { app, auth, db } from "../firebase.js";
-import { deleteUser, onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, deleteDoc } from "firebase/firestore";
-import { useLocation, useNavigate } from 'react-router-dom';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 import logo_dark from '../assets/smoothie-dark.png';
 import logo_light from '../assets/smoothie-light.png';
 import toggle_dark from '../assets/day.png';
@@ -24,20 +23,6 @@ const Dashboard = () => {
             mode: themeMode,
         },
     }), [themeMode]);
-
-    const handleAccountDeletion = async () => {
-        if (!user) {
-            console.error("No user is signed in.");
-            return;
-        }
-
-        try {
-            // await deleteDoc(doc(db, "users", user.uid));
-            // await deleteUser(user);
-        } catch (error) {
-            console.log(error);
-        }
-    };
 
     const handleSignOut = () => {
         signOut(auth).then(() => {
@@ -79,10 +64,6 @@ const Dashboard = () => {
                         <Stack direction="row" spacing={2}>
                             <Button onClick={handleSignOut} sx={{ color: themeMode === 'light' ? 'black':'white', backgroundColor: 'rgba(78, 196, 4, 1)', fontSize: '0.95rem', height: '30px', padding: '0.4rem 0.75rem', minWidth: '64px', lineHeight: 1.2, boxSizing: 'border-box', textTransform: 'none',}}>
                                 Log Out
-                            </Button>
-                    
-                            <Button onClick={handleAccountDeletion} sx={{ color: themeMode === 'light' ? 'black':'white', backgroundColor: 'rgba(78, 196, 4, 1)', fontSize: '0.95rem', height: '30px', padding: '0.4rem 0.75rem', minWidth: '64px', lineHeight: 1.2, boxSizing: 'border-box', textTransform: 'none',}}>
-                                Delete
                             </Button>
                         </Stack>
                     
