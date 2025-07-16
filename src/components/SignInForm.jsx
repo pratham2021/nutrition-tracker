@@ -1,5 +1,5 @@
 import React, { useState, useEffect }  from 'react';
-import { Box, Button, Container, Grid, Link, Paper, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Container, Grid, Link, Paper, Snackbar, TextField, Typography } from '@mui/material';
 import MailIcon from '@mui/icons-material/Mail';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from "../firebase.js";
@@ -8,6 +8,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 const SignInForm = ({theme}) => {
 
+  const [snackBarOpen, setSnackBarOpen] = useState(false);
+  const [snackBarMessage, setSnackBarMessage] = useState("");
+  const [snackBarSeverity, setSnackBarSeverity] = useState("success");
+
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,20 +19,6 @@ const SignInForm = ({theme}) => {
   const [errors, setErrors] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // useEffect(() => {
-  //   const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-  //       setUser(currentUser);
-  //   })
-  
-  //   return () => unsubscribe();
-  // }, []);
-  
-  // useEffect(() => {
-  //   if (user && location.pathname !== '/dashboard') {
-  //     navigate('/dashboard');
-  //   }
-  // }, [user, navigate, location.pathname]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -39,10 +29,15 @@ const SignInForm = ({theme}) => {
   }, []);
   
   useEffect(() => {
+
     if (user && location.pathname !== '/dashboard') {
       navigate('/dashboard');
     }
   }, [user, navigate, location.pathname]);
+
+  const handleSnackBarClose = () => {
+    setSnackBarOpen(false);
+  }
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -53,20 +48,60 @@ const SignInForm = ({theme}) => {
     }
     
     if (password === "") {
-        input.push("Email field can't be empty.");
+        input.push("Password field can't be empty.");
     }
+    
+    setErrors(input);
 
     try {
       if (email === "" || password === "") {
+          const message = errors.join("\n");
+          setSnackBarMessage(message);
+          setSnackBarSeverity("error");
+          setSnackBarOpen(true);
           return;
+      }
+      else {
+          setErrors([]);
       }
 
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       setEmail('');
       setPassword('');
-    }
+      if (userCredential.user) {
+          setSnackBarMessage("Successful Sign In!");
+          setSnackBarSeverity("success");
+          setSnackBarOpen(true);
+      }
+   }
     catch (error) {
         console.log(error);
+
+        let userFriendlyMessage;
+
+        switch (error.code) {
+          case 'auth/wrong-password':
+            userFriendlyMessage = "Incorrect password. Please try again.";
+            break;
+          case 'auth/user-not-found':
+            userFriendlyMessage = "Not account found with this email.";
+            break;     
+          case 'auth/invalid-email':
+            userFriendlyMessage = "Please enter a valid email address.";
+            break;
+          case 'auth/too-many-requests':
+            userFriendlyMessage = "Too many attempts. Please try again later.";
+            break;
+          case 'auth/user-disabled':
+            userFriendlyMessage = "This user account has been disabled";
+            break;
+          default:
+            userFriendlyMessage = error.message;
+        }
+
+        setSnackBarMessage(error.message);
+        setSnackBarSeverity("error");
+        setSnackBarOpen(true);
     }
   }
   
@@ -136,12 +171,14 @@ const SignInForm = ({theme}) => {
                       </Grid>
                   </Box>
               </Paper>
+
+              <Snackbar open={snackBarOpen} autoHideDuration={2500} onClose={handleSnackBarClose} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+                  <Alert onClose={handleSnackBarClose} severity={snackBarSeverity} sx={{ width: '100%' }}>
+                      {snackBarMessage}
+                  </Alert>
+              </Snackbar>
           </Container>
   )
 }
 
 export default SignInForm;
-
-      // color: theme === 'light' ? 'black' : 'white', // prevent color change
-      // backgroundColor: 'transparent',              // prevent background change
-      // textDecoration: 'underline',

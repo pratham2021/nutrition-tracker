@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Container, Grid, Link, Paper, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Container, Grid, Link, Paper, Snackbar, TextField, Typography } from '@mui/material';
 import MailIcon from '@mui/icons-material/Mail';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { app, auth, db } from "../firebase.js";
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { makeStyles } from '@mui/styles';
 
 /* sx={{marginTop: 8, padding: 2}} is a common way to apply inline styling in Material-UI 
 marginTop: 8 sets the top margin of the component (64 pixels off the top)
@@ -24,6 +25,10 @@ const SignUpForm = ({theme}) => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [snackBarOpen, setSnackBarOpen] = useState(false);
+  const [snackBarMessage, setSnackBarMessage] = useState("");
+  const [snackBarSeverity, setSnackBarSeverity] = useState("success");
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
         setUser(currentUser);
@@ -38,13 +43,19 @@ const SignUpForm = ({theme}) => {
     }
   }, [user, navigate, location.pathname]);
 
+  const handleSnackBarClose = () => {
+    setSnackBarOpen(false);
+    setSnackBarMessage("");
+  }
+
   async function addDocument(docId, data) {
       try {
         const documentReference = doc(db, "users", docId);
         await setDoc(documentReference, data);
       } catch (e) {
-        const input = ["Error saving you to the database"];
-        setErrors(input);
+        setSnackBarMessage("Error saving you to the database!");
+        setSnackBarSeverity("error");
+        setSnackBarOpen(true);
       }
   }
 
@@ -75,7 +86,9 @@ const SignUpForm = ({theme}) => {
 
         if (userName === "" || firstName === "" || lastName === "" || email === "" || password === "") {
           // Display Pop Up
-
+          setSnackBarMessage("Successful Sign In!");
+          setSnackBarSeverity("error");
+          setSnackBarOpen(true);
           return;
         }
 
@@ -98,10 +111,36 @@ const SignUpForm = ({theme}) => {
         setLastName('');
         setEmail('');
         setPassword('');
+
+        if (result.user) {
+          setSnackBarMessage("Successful Account Creation!");
+          setSnackBarSeverity("success");
+          setSnackBarOpen(true);
+        }
     }
     catch (error) {
-        console.log(error);
-        // Display Error Message
+        let userFriendlyMessage;
+
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            userFriendlyMessage = "This email is already in use.";
+            break;
+          case 'auth/invalid-email':
+            userFriendlyMessage = "Please enter a valid email address.";
+            break;
+          case 'auth/weak-password':
+            userFriendlyMessage = "Password should be at least 6 characters.";
+            break;
+          case 'auth/operation-not-allowed':
+            userFriendlyMessage = "Sign up is not allowed at this time.";
+            break;
+          default:
+            userFriendlyMessage = error.message || "Something went wrong. Please try again.";
+        }
+
+        setSnackBarMessage(userFriendlyMessage);
+        setSnackBarSeverity("error");
+        setSnackBarOpen(true);
     }
   }
 
@@ -236,6 +275,12 @@ const SignUpForm = ({theme}) => {
                 </Button>
             </Box>
         </Paper>
+
+        <Snackbar open={snackBarOpen} autoHideDuration={2500} onClose={handleSnackBarClose} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+            <Alert onClose={handleSnackBarClose} severity={snackBarSeverity} sx={{ width: '100%' }}>
+                {snackBarMessage}
+            </Alert>
+        </Snackbar>
     </Container>
   )
 }

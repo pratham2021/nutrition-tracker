@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import SignUpForm from './components/SignUpForm.jsx';
-import SignInForm from './components/SignInForm.jsx';
+import SignInForm from "./components/SignInForm.jsx";
 import { AppBar, Button, Toolbar, Typography, Box, createTheme, CssBaseline, Stack, ThemeProvider} from '@mui/material';
 import logo_dark from './assets/smoothie-dark.png';
 import logo_light from './assets/smoothie-light.png';
@@ -63,7 +63,72 @@ function App() {
             </AppBar>
 
             <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -55%)'}}>
-                {signInPressed ? (<SignInForm theme={themeMode}/>) : (<SignUpForm theme={themeMode}/>)}
+                {signInPressed ? (
+                  <SignInForm theme={themeMode}/>
+                  
+                  // <Container maxWidth="xs">
+                  //   <Paper elevation={10} sx={{ borderRadius: '20px', marginTop: 8, padding: 2, textAlign: 'center'}}>
+                  //       <MailIcon style={{ color: themeMode === 'light' ? 'black':'rgba(78, 196, 4, 1)', mx:"auto", mb:1 }}/>
+                        
+                  //       <Typography component="h1" variant="h5" sx={{ color: themeMode === 'light' ? 'black':'rgba(78, 196, 4, 1)', textAlign: "center" }}>
+                  //         Sign In
+                  //       </Typography>
+                  //       <Box component="form" noValidate sx={{mt: 1}}>
+                  //           <TextField type="email"  value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" variant="standard" InputLabelProps={{
+                  //               style: {
+                  //                 color: 'rgba(78, 196, 4, 1)',
+                  //               },
+                  //             }}
+
+                  //             InputProps={{
+                  //               disableUnderline: true,
+                  //               style: {
+                  //                 color: themeMode === 'light' ? 'black':'rgba(78, 196, 4, 1)',
+                  //                 borderBottom: '2px solid rgba(78, 196, 4, 1)',
+                  //               },
+                  //             }}
+
+                  //             sx={{ mb: 3, '& input::placeholder': { color: themeMode === 'light' ? 'black':'rgba(78, 196, 4, 1)', opacity: 1,}}} fullWidth required/>
+
+                  //           <TextField type="password" value={password} placeholder="Password" autoComplete="current-password" onChange={(e) => setPassword(e.target.value)} variant="standard" InputLabelProps={{
+                  //               style: {
+                  //                 color: 'rgba(78, 196, 4, 1)',
+                  //               },
+                  //             }}
+                  //             InputProps={{
+                  //               disableUnderline: true,
+                  //               style: {
+                  //                 color: themeMode === 'light' ? 'black':'rgba(78, 196, 4, 1)',
+                  //                 borderBottom: '2px solid rgba(78, 196, 4, 1)',
+                  //               },
+                  //             }}
+
+                  //             sx={{
+                  //               mb: 3,
+                  //               '& input::placeholder': {
+                  //                 color: themeMode === 'light' ? 'black':'rgba(78, 196, 4, 1)',
+                  //                 opacity: 1,
+                  //               }
+                  //             }}
+                  //             fullWidth required
+                  //           />
+
+                  //           <Button onClick={handleAuthenticationSignIn} type="submit" variant="contained" fullWidth sx={{ backgroundColor: 'rgba(78, 196, 4, 1)', mt: 1, color: themeMode === 'light' ? 'black':'white', textTransform: 'none', fontSize: '18px', padding: '6px 12px', minWidth: 'auto'}} >
+                  //               Sign In
+                  //           </Button>
+
+                  //           <Grid container justifyItems="center" justifyContent="center" sx={{mt: 3, mb:1.25}} alignItems="center" spacing={2}>
+                  //             <Grid item xs={6}>
+                  //                 <Button disableRipple disableElevation component="button" sx={{ backgroundColor: 'transparent', fontFamily: 'Arial, sans-serif', fontSize: '16px', color: themeMode === 'light' ? 'black':'white', textTransform: 'none', '&:hover': { color: themeMode === 'light' ? 'black': 'white', backgroundColor: 'transparent', textDecoration: 'underline',}, }}>Forgot Password?</Button>
+                  //             </Grid>
+                  //           </Grid>
+                  //       </Box>
+                  //   </Paper>
+                  // </Container>
+
+                  ) : (
+                  <SignUpForm theme={themeMode}/>
+                  )}
             </div>
           </ThemeProvider>
     );
