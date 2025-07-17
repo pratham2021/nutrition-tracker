@@ -82,11 +82,9 @@ const SignUpForm = ({theme}) => {
     setErrors(input);
 
     try {
-
-
         if (userName === "" || firstName === "" || lastName === "" || email === "" || password === "") {
           // Display Pop Up
-          setSnackBarMessage("Successful Sign In!");
+          setSnackBarMessage("One or more fields are empty!");
           setSnackBarSeverity("error");
           setSnackBarOpen(true);
           return;

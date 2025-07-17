@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { AppBar, Button, Box, Card, CardContent, createTheme, CssBaseline,  Dialog, DialogTitle, DialogActions, DialogContent, DialogContentText, Stack, TextField, Toolbar, Typography, ThemeProvider} from '@mui/material';
+import { Alert, AppBar, Button, Box, Card, CardContent, createTheme, CssBaseline,  Dialog, DialogTitle, DialogActions, DialogContent, DialogContentText, Snackbar, Stack, TextField, Toolbar, Typography, ThemeProvider} from '@mui/material';
 import { app, auth, db } from "../firebase.js";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
+import { collection, addDoc, doc, setDoc, documentId } from 'firebase/firestore';
 import logo_dark from '../assets/smoothie-dark.png';
 import logo_light from '../assets/smoothie-light.png';
 import toggle_dark from '../assets/day.png';
@@ -17,15 +18,23 @@ const Dashboard = () => {
     // const [items, setItems] = useState([]);
     const items = Array.from({ length: 10 }, (_, i) => `Card ${i + 1}`);
     const [openDialog, setOpenDialog] = useState(false);
+    const [errors, setErrors] = useState();
+
+    const [snackBarOpen, setSnackBarOpen] = useState(false);
+    const [snackBarMessage, setSnackBarMessage] = useState("");
+    const [snackBarSeverity, setSnackBarSeverity] = useState("success");
+    
+    const handleSnackBarClose = () => {
+        setSnackBarOpen(false);
+        setSnackBarMessage("");
+    }
 
     const bringUpPopUp = () => {
         setOpenDialog(true);
-
     };
 
     const closePopUp = () => {
         setOpenDialog(false);
-
     }
     
     const toggleTheme = () => {
@@ -38,9 +47,64 @@ const Dashboard = () => {
         },
     }), [themeMode]);
 
-    const saveFoodDataToTheDatabase = () => {
+    function hasEmptyItem(items) {
+        return items.some(item => item === "");
+    }
+
+    function getWeekRange(date) {
+        const current = new Date(date);
+        const day = current.getDay();
+        const start = new Date(current);
+        start.setDate(current.getDate() - day);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6);
+
+        return { start, end };
+    }
+
+    const saveFoodDataToTheDatabase = async () => {
         if (user) {
             const collectionId = user.uid;
+
+            const todaysDate = new Date();
+            const documentId = todaysDate.toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric"
+            });
+                
+            console.log(documentId);
+
+            const dateObj = new Date(documentId);
+
+            const { start, end } = getWeekRange(dateObj);
+
+            if (hasEmptyItem(breakfastItems) || hasEmptyItem(lunchItems) || hasEmptyItem(dinnerItems)) {
+                setErrors("One or more items are left blank.");
+                return;
+            }
+
+            const dataToBeSaved = {
+                "Breakfast": breakfastItems,
+                "Lunch": lunchItems,
+                "Dinner": dinnerItems,
+            };
+
+            const mainDocumentId = `${start.toDateString()} - ${end.toDateString()}`;
+
+            const documentReference = doc(db, collectionId, mainDocumentId, documentId, documentId);
+
+            setSnackBarOpen(true);
+
+            try {
+                await setDoc(documentReference, dataToBeSaved);
+                setSnackBarMessage("Successfully saved to the database!");
+                setSnackBarSeverity("success");
+            } catch (e) {
+                // console.error("Error writing document: ", e);
+                setSnackBarMessage(`Error saving entry to the database: ${e.message}`);
+                setSnackBarSeverity("warning");
+            }
         }
     };
 
@@ -118,11 +182,14 @@ const Dashboard = () => {
     };
 
     const handleSave = () => {
-        saveFoodDataToTheDatabase({
-        breakfast: breakfastItems,
-        lunch: lunchItems,
-        dinner: dinnerItems,
-        });
+        // saveFoodDataToTheDatabase({
+        //     breakfast: breakfastItems,
+        //     lunch: lunchItems,
+        //     dinner: dinnerItems,
+        // });
+        saveFoodDataToTheDatabase();
+        console.log("Closing...")
+        closePopUp();
     };
 
     const inputSx = {
@@ -145,9 +212,8 @@ const Dashboard = () => {
         backgroundColor: themeMode === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(78, 196, 4, 0.15)',
         },
         marginTop: 1,
+        textTransform: 'none',
     };
-
-    
         
     return (
     <>
@@ -193,25 +259,66 @@ const Dashboard = () => {
                 ))}
             </Box>
 
-            <Dialog open={openDialog} onClose={closePopUp} aria-labelledby='dialog-title' fullWidth PaperProps={{ sx: { backgroundColor: themeMode === 'light' ?  'white': 'rgb(10, 10, 10)'}, }}>
-                <DialogTitle id='dialog-title' aria-describedby='dialog-content' sx={{ textAlign: 'center', fontWeight: 600, fontSize: '1.25rem', color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)':'white' }}>Food Entry</DialogTitle>
+            <Dialog open={openDialog} onClose={closePopUp} aria-labelledby='dialog-title' fullWidth PaperProps={{ sx: { backgroundColor: themeMode === 'light' ? 'white' : 'rgb(10, 10, 10)' } }}>
+                <DialogTitle id='dialog-title' aria-describedby='dialog-content' sx={{ textAlign: 'center', fontWeight: 600, fontSize: '1.25rem', color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'white',}}>
+                    Food Entry
+                </DialogTitle>
+
                 <DialogContent>
                     <Stack spacing={2} margin={2}>
-                        <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)'}}>Breakfast</Typography>
-                        <TextField variant="outlined" label="Meal 1" sx={{ '& .MuiOutlinedInput-root.Mui-focused fieldset': { borderColor: themeMode === 'light' ? 'black' : 'rgba(78, 196, 4, 1)' }, '& .MuiOutlinedInput-root:hover fieldset': { borderColor: themeMode === 'light' ? 'black' : 'rgba(78, 196, 4, 1)' }, '& .MuiInputLabel-root.Mui-focused': { color: themeMode === 'light' ? 'black' : 'rgba(78, 196, 4, 1)' },}}/>
-                        
-                        <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)'}}>Lunch</Typography>
-                        <TextField variant="outlined" label="Meal 1" sx={{ '& .MuiOutlinedInput-root.Mui-focused fieldset': { borderColor: themeMode === 'light' ? 'black' : 'rgba(78, 196, 4, 1)' }, '& .MuiOutlinedInput-root:hover fieldset': { borderColor: themeMode === 'light' ? 'black' : 'rgba(78, 196, 4, 1)' }, '& .MuiInputLabel-root.Mui-focused': { color: themeMode === 'light' ? 'black' : 'rgba(78, 196, 4, 1)' },}}/>
-                        
-                        <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)'}}>Dinner</Typography>
-                        <TextField variant="outlined" label="Meal 1" sx={{ '& .MuiOutlinedInput-root.Mui-focused fieldset': { borderColor: themeMode === 'light' ? 'black' : 'rgba(78, 196, 4, 1)' }, '& .MuiOutlinedInput-root:hover fieldset': { borderColor: themeMode === 'light' ? 'black' : 'rgba(78, 196, 4, 1)' }, '& .MuiInputLabel-root.Mui-focused': { color: themeMode === 'light' ? 'black' : 'rgba(78, 196, 4, 1)' },}}/>
+
+                    <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)' }}>
+                        Breakfast
+                    </Typography>
+
+                    {breakfastItems.map((item, i) => (
+                        <TextField key={i} variant="outlined" label={`Meal ${i + 1}`} value={item} onChange={(e) => handleChange('breakfast', i, e.target.value)} sx={inputSx} fullWidth/>
+                    ))}
+
+                    <Button variant="outlined" onClick={() => addField('breakfast')} sx={buttonSx}>
+                        Add Breakfast Item
+                    </Button>
+
+                    <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)' }}>
+                        Lunch
+                    </Typography>
+
+                    {lunchItems.map((item, i) => (
+                        <TextField key={i} variant="outlined" label={`Meal ${i + 1}`} value={item} onChange={(e) => handleChange('lunch', i, e.target.value)} sx={inputSx} fullWidth/>
+                    ))}
+
+                    <Button variant="outlined" onClick={() => addField('lunch')} sx={buttonSx}>
+                        Add Lunch Item
+                    </Button>
+
+                    <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)' }}>
+                        Dinner
+                    </Typography>
+
+                    {dinnerItems.map((item, i) => (
+                        <TextField key={i} variant="outlined" label={`Meal ${i + 1}`} value={item} onChange={(e) => handleChange('dinner', i, e.target.value)} sx={inputSx} fullWidth/>
+                    ))}
+                    
+                    <Button variant="outlined" onClick={() => addField('dinner')} sx={buttonSx}>
+                        Add Dinner Item
+                    </Button>
                     </Stack>
                 </DialogContent>
+
                 <DialogActions>
-                    <Button disableElevation disableRipple variant='contained' onClick={saveFoodDataToTheDatabase} sx={{ backgroundColor: 'rgba(78, 196, 4, 1)', color: themeMode === 'light'? 'rgb(10, 10, 10)': 'white', '&:hover': { backgroundColor: 'rgba(78, 196, 4, 1)', boxShadow: 'none',} }}>Save</Button>
-                    <Button disableElevation disableRipple variant='contained' color="error" onClick={closePopUp} sx={{ '&:hover': { backgroundColor: (theme) => theme.palette.error.main, boxShadow: 'none',}}}>Cancel</Button>
+                    <Button disableElevation disableRipple variant="contained" onClick={handleSave} sx={{ backgroundColor: 'rgba(78, 196, 4, 1)',color: themeMode === 'light' ? 'rgb(10, 10, 10)' : 'white', '&:hover': { backgroundColor: 'rgba(78, 196, 4, 1)', boxShadow: 'none' },}}>Save</Button>
+                    <Button disableElevation disableRipple variant="contained" color="error" onClick={closePopUp} sx={{ '&:hover': { backgroundColor: (theme) => theme.palette.error.main, boxShadow: 'none' },}}>
+                        Cancel
+                    </Button>
                 </DialogActions>
             </Dialog>
+
+            <Snackbar open={snackBarOpen} autoHideDuration={2500} onClose={handleSnackBarClose} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+                <Alert onClose={handleSnackBarClose} severity={snackBarSeverity} sx={{ width: '100%' }}>
+                    {snackBarMessage}
+                </Alert>
+            </Snackbar>
+
         </ThemeProvider>
     </>
     );
