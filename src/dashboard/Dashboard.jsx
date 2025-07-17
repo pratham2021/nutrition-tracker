@@ -63,7 +63,92 @@ const Dashboard = () => {
             }
         });
     }, []);
+
+    const [breakfastItems, setBreakfastItems] = useState(['']);
+    const [lunchItems, setLunchItems] = useState(['']);
+    const [dinnerItems, setDinnerItems] = useState(['']);
+
+    const handleChange = (meal, index, value) => {
+        let setter;
+        let items;
+
+        switch (meal) {
+        case 'breakfast':
+            items = [...breakfastItems];
+            items[index] = value;
+            setter = setBreakfastItems;
+            break;
+        case 'lunch':
+            items = [...lunchItems];
+            items[index] = value;
+            setter = setLunchItems;
+            break;
+        case 'dinner':
+            items = [...dinnerItems];
+            items[index] = value;
+            setter = setDinnerItems;
+            break;
+        default:
+            return;
+        }
+        setter(items);
+    };
+
+    const addField = (meal) => {
+        let setter;
+        let items;
+
+        switch (meal) {
+            case 'breakfast':
+                setter = setBreakfastItems;
+                items = [...breakfastItems, ''];
+                break;
+            case 'lunch':
+                setter = setLunchItems;
+                items = [...lunchItems, ''];
+                break;
+            case 'dinner':
+                setter = setDinnerItems;
+                items = [...dinnerItems, ''];
+                break;
+            default:
+                return;
+        }
+        setter(items);
+    };
+
+    const handleSave = () => {
+        saveFoodDataToTheDatabase({
+        breakfast: breakfastItems,
+        lunch: lunchItems,
+        dinner: dinnerItems,
+        });
+    };
+
+    const inputSx = {
+        '& .MuiOutlinedInput-root.Mui-focused fieldset': {
+        borderColor: themeMode === 'light' ? 'black' : 'rgba(78, 196, 4, 1)',
+        },
+        '& .MuiOutlinedInput-root:hover fieldset': {
+        borderColor: themeMode === 'light' ? 'black' : 'rgba(78, 196, 4, 1)',
+        },
+        '& .MuiInputLabel-root.Mui-focused': {
+        color: themeMode === 'light' ? 'black' : 'rgba(78, 196, 4, 1)',
+        },
+    };
+
+    const buttonSx = {
+        color: themeMode === 'light' ? 'black' : 'rgba(78, 196, 4, 1)',
+        borderColor: themeMode === 'light' ? 'black' : 'rgba(78, 196, 4, 1)',
+        '&:hover': {
+        borderColor: themeMode === 'light' ? 'black' : 'rgba(78, 196, 4, 1)',
+        backgroundColor: themeMode === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(78, 196, 4, 0.15)',
+        },
+        marginTop: 1,
+    };
+
     
+        
     return (
     <>
         <ThemeProvider theme={theme}>
