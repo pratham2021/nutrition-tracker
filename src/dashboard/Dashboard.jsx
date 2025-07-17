@@ -77,12 +77,13 @@ const Dashboard = () => {
     };
 
     const viewExistingEntry = () => {
-        setOpenDialog(true);
-    }
+        console.log("Card Clicked!");
+        // setOpenDialog(true);
+    };
 
     const closePopUp = () => {
         setOpenDialog(false);
-    }
+    };
     
     const toggleTheme = () => {
         setThemeMode((prev) => (prev === 'light' ? 'dark' : 'light'));
@@ -96,7 +97,7 @@ const Dashboard = () => {
 
     function hasEmptyItem(items) {
         return items.some(item => item === "");
-    }
+    };
 
     function getWeekRange(date) {
         const current = new Date(date);
@@ -295,9 +296,9 @@ const Dashboard = () => {
                 <Button disableFocusRipple disableRipple disableElevation onClick={bringUpNewEntryPopUp} variant="contained" sx={{ height: '30px', padding: '0.4rem 0.75rem', minWidth: '64px', lineHeight: 1.2, boxSizing: 'border-box', fontSize: '0.95rem', color: themeMode === 'light' ? 'black':'white', backgroundColor:'rgba(78, 196, 4, 1)', textTransform: 'none',}}>Add</Button>
             </Box>
 
-            <Box sx={{ display: 'flex', overflowX: 'auto', gap: 2, p: 2, scrollbarWidth: 'thin', '&::-webkit-scrollbar': { height: '8px', }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '4px',},}}>
+            <Box sx={{ display: 'flex', justifyContent: items.length * 200 + items.length * 16 < window.innerWidth ? 'center' : 'flex-start', overflowX: 'auto', gap: 2, p: 2, scrollbarWidth: 'thin', '&::-webkit-scrollbar': { height: '8px', }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '4px',},}}>
                 {items.map((item, index) => (
-                    <Card key={index} sx={{ minWidth: 200, flexShrink: 0 }}>
+                    <Card onClick={viewExistingEntry} key={index} sx={{ minWidth: 200, flexShrink: 0 }}>
                         <CardContent>
                             <Typography variant="h6">{item}</Typography>
                             <Typography variant="body2">Some content</Typography>
