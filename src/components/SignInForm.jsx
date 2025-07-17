@@ -37,6 +37,7 @@ const SignInForm = ({theme}) => {
 
   const handleSnackBarClose = () => {
     setSnackBarOpen(false);
+    setSnackBarMessage("");
   }
 
   const handleSignIn = async (e) => {
@@ -96,10 +97,10 @@ const SignInForm = ({theme}) => {
             userFriendlyMessage = "This user account has been disabled";
             break;
           default:
-            userFriendlyMessage = error.message;
+            userFriendlyMessage = 'Error: Invalid Authentication Credentials';
         }
 
-        setSnackBarMessage(error.message);
+        setSnackBarMessage(userFriendlyMessage);
         setSnackBarSeverity("error");
         setSnackBarOpen(true);
     }
@@ -160,13 +161,13 @@ const SignInForm = ({theme}) => {
                         fullWidth required
                       />
 
-                      <Button onClick={handleSignIn} type="submit" variant="contained" fullWidth sx={{ backgroundColor: 'rgba(78, 196, 4, 1)', mt: 1, color: theme === 'light' ? 'black':'white', textTransform: 'none', fontSize: '18px', padding: '6px 12px', minWidth: 'auto'}} >
+                      <Button disableRipple disableElevation onClick={handleSignIn} type="submit" variant="contained" fullWidth sx={{ backgroundColor: 'rgba(78, 196, 4, 1)', mt: 1, color: theme === 'light' ? 'black':'white', textTransform: 'none', fontSize: '18px', padding: '6px 12px', minWidth: 'auto', '&:hover': { backgroundColor: 'rgba(78, 196, 4, 1)', boxShadow: 'none',}}} >
                           Sign In
                       </Button>
 
                       <Grid container justifyItems="center" justifyContent="center" sx={{mt: 3, mb:1.25}} alignItems="center" spacing={2}>
                         <Grid item xs={6}>
-                            <Button disableRipple disableElevation component="button" sx={{ backgroundColor: 'transparent', fontFamily: 'Arial, sans-serif', fontSize: '16px', color: theme === 'light' ? 'black':'white', textTransform: 'none', '&:hover': { color: theme === 'light' ? 'black': 'white', backgroundColor: 'transparent', textDecoration: 'underline',}, }}>Forgot Password?</Button>
+                            <Button disableRipple disableElevation component="button" sx={{ backgroundColor: 'transparent', fontFamily: 'Arial, sans-serif', fontSize: '16px', color: theme === 'light' ? 'black':'white', textTransform: 'none', '&:hover': { color: theme === 'light' ? 'black': 'white', backgroundColor: 'transparent', textDecoration: 'underline', '&:hover': { backgroundColor: 'rgba(78, 196, 4, 1)', boxShadow: 'none',}}, }}>Forgot Password?</Button>
                         </Grid>
                       </Grid>
                   </Box>
