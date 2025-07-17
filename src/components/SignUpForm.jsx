@@ -76,25 +76,29 @@ const SignUpForm = ({theme}) => {
         input.push("Email field can't be empty.");
     }
     if (password === "") {
-        input.push("Email field can't be empty.");
+        input.push("Password field can't be empty.");
     }
 
     setErrors(input);
 
     try {
         if (userName === "" || firstName === "" || lastName === "" || email === "" || password === "") {
-          // Display Pop Up
-          setSnackBarMessage("One or more fields are empty!");
-          setSnackBarSeverity("error");
-          setSnackBarOpen(true);
-          return;
+            setSnackBarMessage("One or more fields are empty!");
+            setSnackBarSeverity("error");
+            setSnackBarOpen(true);
+            return;
         }
 
         setErrors([]);
         const result = await createUserWithEmailAndPassword(auth, email, password);
         const userId = result.user.uid;
 
-        // Save that user onto the database
+        if (result.user) {
+            setSnackBarMessage("Successful Account Creation!");
+            setSnackBarSeverity("success");
+            setSnackBarOpen(true);
+        }
+
         addDocument(userId, {
             userName: userName,
             firstName: firstName,
@@ -103,37 +107,30 @@ const SignUpForm = ({theme}) => {
             id: userId
         });
 
-        // Clear the fields
         setUserName('');
         setFirstName('');
         setLastName('');
         setEmail('');
         setPassword('');
-
-        if (result.user) {
-          setSnackBarMessage("Successful Account Creation!");
-          setSnackBarSeverity("success");
-          setSnackBarOpen(true);
-        }
     }
     catch (error) {
         let userFriendlyMessage;
 
         switch (error.code) {
-          case 'auth/email-already-in-use':
-            userFriendlyMessage = "This email is already in use.";
-            break;
-          case 'auth/invalid-email':
-            userFriendlyMessage = "Please enter a valid email address.";
-            break;
-          case 'auth/weak-password':
-            userFriendlyMessage = "Password should be at least 6 characters.";
-            break;
-          case 'auth/operation-not-allowed':
-            userFriendlyMessage = "Sign up is not allowed at this time.";
-            break;
-          default:
-            userFriendlyMessage = error.message || "Something went wrong. Please try again.";
+            case 'auth/email-already-in-use':
+                userFriendlyMessage = "This email is already in use.";
+                break;
+            case 'auth/invalid-email':
+                userFriendlyMessage = "Please enter a valid email address.";
+                break;
+            case 'auth/weak-password':
+                userFriendlyMessage = "Password should be at least 6 characters.";
+                break;
+            case 'auth/operation-not-allowed':
+                userFriendlyMessage = "Sign up is not allowed at this time.";
+                break;
+            default:
+                userFriendlyMessage = error.message || "Something went wrong. Please try again.";
         }
 
         setSnackBarMessage(userFriendlyMessage);

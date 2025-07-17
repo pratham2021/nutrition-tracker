@@ -3,7 +3,7 @@ import { Alert, AppBar, Button, Box, Card, CardContent, createTheme, CssBaseline
 import { app, auth, db } from "../firebase.js";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc, doc, setDoc, documentId } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, documentId, getDoc } from 'firebase/firestore';
 import logo_dark from '../assets/smoothie-dark.png';
 import logo_light from '../assets/smoothie-light.png';
 import toggle_dark from '../assets/day.png';
@@ -29,9 +29,56 @@ const Dashboard = () => {
         setSnackBarMessage("");
     }
 
-    const bringUpPopUp = () => {
-        setOpenDialog(true);
+    const checkIfUserHasAlreadyEnteredSomethingForTheDay = async () => {
+        if (user) {
+            const mainCollection = user.uid;
+
+            const todaysDate = new Date();
+            const subID = todaysDate.toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric"
+            });
+
+            const dateObj = new Date(subID);
+
+            const { start, end } = getWeekRange(dateObj); 
+
+            const mainDocumentID = `${start.toDateString()} - ${end.toDateString()}`;
+
+            const subDocRef = doc(db, mainCollection, mainDocumentID, subID, subID);
+
+            try {
+                const subDoc = await getDoc(subDocRef);
+
+                if (subDoc.exists()) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+            catch (error) {
+                return false;
+            }
+        }
+    }
+
+    const bringUpNewEntryPopUp = async () => {
+        const userHasAlreadyEnteredSomethingForTheDay = await checkIfUserHasAlreadyEnteredSomethingForTheDay();
+        if (userHasAlreadyEnteredSomethingForTheDay) {
+            setSnackBarOpen(true);
+            setSnackBarMessage("You have already entered your meals for the day! Please return tomorrow!");
+            setSnackBarSeverity("warning"); 
+        }
+        else {
+            setOpenDialog(true);
+        }
     };
+
+    const viewExistingEntry = () => {
+        setOpenDialog(true);
+    }
 
     const closePopUp = () => {
         setOpenDialog(false);
@@ -245,7 +292,7 @@ const Dashboard = () => {
             <Toolbar/>
 
             <Box sx={{ display: 'inline-flex', justifyContent: 'flex-start', mt: 2, px: 2,}}>
-                <Button disableFocusRipple disableRipple disableElevation onClick={bringUpPopUp} variant="contained" sx={{ height: '30px', padding: '0.4rem 0.75rem', minWidth: '64px', lineHeight: 1.2, boxSizing: 'border-box', fontSize: '0.95rem', color: themeMode === 'light' ? 'black':'white', backgroundColor:'rgba(78, 196, 4, 1)', textTransform: 'none',}}>Add</Button>
+                <Button disableFocusRipple disableRipple disableElevation onClick={bringUpNewEntryPopUp} variant="contained" sx={{ height: '30px', padding: '0.4rem 0.75rem', minWidth: '64px', lineHeight: 1.2, boxSizing: 'border-box', fontSize: '0.95rem', color: themeMode === 'light' ? 'black':'white', backgroundColor:'rgba(78, 196, 4, 1)', textTransform: 'none',}}>Add</Button>
             </Box>
 
             <Box sx={{ display: 'flex', overflowX: 'auto', gap: 2, p: 2, scrollbarWidth: 'thin', '&::-webkit-scrollbar': { height: '8px', }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '4px',},}}>
