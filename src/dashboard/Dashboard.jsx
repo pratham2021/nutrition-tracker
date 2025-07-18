@@ -3,12 +3,12 @@ import { Alert, AppBar, Button, Box, Card, CardContent, createTheme, CssBaseline
 import { app, auth, db } from "../firebase.js";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc, doc, setDoc, documentId, getDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, documentId, getDoc, getDocs, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import logo_dark from '../assets/smoothie-dark.png';
 import logo_light from '../assets/smoothie-light.png';
 import toggle_dark from '../assets/day.png';
 import toggle_light from '../assets/night.png';
-
+import ReusableComponent from '../components/ReusableComponent.jsx';
 
 const Dashboard = () => {
 
@@ -16,13 +16,60 @@ const Dashboard = () => {
     const [themeMode, setThemeMode] = useState('light');
     const navigate = useNavigate();
     // const [items, setItems] = useState([]);
-    const items = Array.from({ length: 10 }, (_, i) => `Card ${i + 1}`);
+    const items = Array.from({ length: 20 }, (_, i) => `Card ${1}`);
     const [openDialog, setOpenDialog] = useState(false);
     const [errors, setErrors] = useState();
 
     const [snackBarOpen, setSnackBarOpen] = useState(false);
     const [snackBarMessage, setSnackBarMessage] = useState("");
     const [snackBarSeverity, setSnackBarSeverity] = useState("success");
+
+    const [AIResponses, setAIResponses] = useState({});
+
+    const [breakfastItems, setBreakfastItems] = useState(['']);
+    const [lunchItems, setLunchItems] = useState(['']);
+    const [dinnerItems, setDinnerItems] = useState(['']);
+
+    const [mainDocIDs, setMainDocIDs] = useState([]);
+    const [subCollections, setSubCollections] = useState({});
+
+    const fetchMainDocuments = async () => {
+        if (user) {
+            const mainCollectionReference = collection(db, user.uid);
+            const q = query(mainCollectionReference, orderBy("createdAt", "desc")); 
+            const snapshot = await getDocs(q);
+
+            const docIds = snapshot.docs.map(doc => doc.id);
+            setMainDocIDs(docIds);
+        }
+        else {
+            setMainDocIDs([]);
+            return;
+        }
+    };
+
+    const fetchNutritionData = async () => {
+        if (!user) return;
+        const newItems = [];
+        for (const mainDocID of mainDocIDs) {
+            const mealDocRef = doc(db, user.uid, mainDocID, "", "");
+            const mealDocSnap = await getDoc(mealDocRef);
+            if (mealDocSnap.exists()) {
+                const data = mealDocSnap.data();
+                newItems.push({
+                    ["r"]: {
+                        "breakfast": data.Breakfast || [],
+                        "lunch": data.Lunch || [],
+                        "dinner": data.Dinner || [],
+                    }
+                });
+            }
+            else {
+
+            }
+        }
+        
+    };
     
     const handleSnackBarClose = () => {
         setSnackBarOpen(false);
@@ -78,7 +125,6 @@ const Dashboard = () => {
 
     const viewExistingEntry = () => {
         console.log("Card Clicked!");
-        // setOpenDialog(true);
     };
 
     const closePopUp = () => {
@@ -135,21 +181,36 @@ const Dashboard = () => {
             const dataToBeSaved = {
                 "Breakfast": breakfastItems,
                 "Lunch": lunchItems,
-                "Dinner": dinnerItems,
+                "Dinner": dinnerItems
             };
 
-            const mainDocumentId = `${start.toDateString()} - ${end.toDateString()}`;
+            const dateFormatOptions = { year: "numeric", month: "short", day: "numeric" };
+            const formattedStart = start.toLocaleDateString("en-US", dateFormatOptions);
+            const formattedEnd = end.toLocaleDateString("en-US", dateFormatOptions);
 
-            const documentReference = doc(db, collectionId, mainDocumentId, documentId, documentId);
+            const mainDocumentId = `${formattedStart} - ${formattedEnd}`;
 
             setSnackBarOpen(true);
 
             try {
+                const mainDocumentReference = doc(db, collectionId, mainDocumentId);
+
+                const mainDocSnap = await getDoc(mainDocumentReference);
+
+                if (!mainDocSnap.exists()) {
+                    await setDoc(mainDocumentReference, { "createdAt": serverTimestamp() });
+                }
+
+                const documentReference = doc(db, collectionId, mainDocumentId, documentId, documentId);
+
                 await setDoc(documentReference, dataToBeSaved);
                 setSnackBarMessage("Successfully saved to the database!");
                 setSnackBarSeverity("success");
+
+                setBreakfastItems(['']);
+                setLunchItems(['']);
+                setDinnerItems(['']);
             } catch (e) {
-                // console.error("Error writing document: ", e);
                 setSnackBarMessage(`Error saving entry to the database: ${e.message}`);
                 setSnackBarSeverity("warning");
             }
@@ -166,6 +227,14 @@ const Dashboard = () => {
     };
 
     useEffect(() => {
+        if (user) {
+            fetchMainDocuments();
+        } else {
+            setMainDocIDs([]);
+        }
+    }, [user]);
+
+    useEffect(() => {
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 setUser(user);
@@ -175,10 +244,6 @@ const Dashboard = () => {
             }
         });
     }, []);
-
-    const [breakfastItems, setBreakfastItems] = useState(['']);
-    const [lunchItems, setLunchItems] = useState(['']);
-    const [dinnerItems, setDinnerItems] = useState(['']);
 
     const handleChange = (meal, index, value) => {
         let setter;
@@ -230,11 +295,6 @@ const Dashboard = () => {
     };
 
     const handleSave = () => {
-        // saveFoodDataToTheDatabase({
-        //     breakfast: breakfastItems,
-        //     lunch: lunchItems,
-        //     dinner: dinnerItems,
-        // });
         saveFoodDataToTheDatabase();
         console.log("Closing...")
         closePopUp();
@@ -296,16 +356,35 @@ const Dashboard = () => {
                 <Button disableFocusRipple disableRipple disableElevation onClick={bringUpNewEntryPopUp} variant="contained" sx={{ height: '30px', padding: '0.4rem 0.75rem', minWidth: '64px', lineHeight: 1.2, boxSizing: 'border-box', fontSize: '0.95rem', color: themeMode === 'light' ? 'black':'white', backgroundColor:'rgba(78, 196, 4, 1)', textTransform: 'none',}}>Add</Button>
             </Box>
 
-            <Box sx={{ display: 'flex', justifyContent: items.length * 200 + items.length * 16 < window.innerWidth ? 'center' : 'flex-start', overflowX: 'auto', gap: 2, p: 2, scrollbarWidth: 'thin', '&::-webkit-scrollbar': { height: '8px', }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '4px',},}}>
-                {items.map((item, index) => (
-                    <Card onClick={viewExistingEntry} key={index} sx={{ minWidth: 200, flexShrink: 0 }}>
-                        <CardContent>
-                            <Typography variant="h6">{item}</Typography>
-                            <Typography variant="body2">Some content</Typography>
-                        </CardContent>
-                    </Card>
-                ))}
+            <Box sx={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'flex-start'}}>
+                <Box sx={{ p: 2, maxWidth: '100%', width: 'fit-content' }}>
+                    {mainDocIDs.length !== 0 ? (
+                        mainDocIDs.map(id => (
+                            <Typography key={id} variant="h5" sx={{ color: themeMode === 'light' ? 'black' : 'white', mb: 2 }}>
+                                {id}
+                            </Typography>
+                        ))
+                    ) : (
+                        <Typography>No entries found.</Typography>
+                    )}
+                
+                    <Box sx={{ display: 'flex', justifyContent: items.length * 200 + items.length * 16 < window.innerWidth ? 'center' : 'flex-start', overflowX: 'auto', gap: 2, mb: 2, paddingBottom: '16px', scrollbarWidth: 'thin', '&::-webkit-scrollbar': { height: '8px' },'&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '4px',}, }}>
+                        {items.map((item, index) => (
+                            <Card onClick={viewExistingEntry} key={index} sx={{ borderRadius:'15px', minWidth: 200, flexShrink: 0, backgroundColor: 'rgba(0, 0, 0, 0.05)', '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.1)', }, transition: 'background-color 0.3s', }}>
+                                <CardContent>
+                                    <Typography variant="h6">{item}</Typography>
+                                    <Typography variant="body2">Some content</Typography>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </Box>
+                    
+                    <Typography variant="body1">
+                        Message
+                    </Typography>
+                </Box>
             </Box>
+
 
             <Dialog open={openDialog} onClose={closePopUp} aria-labelledby='dialog-title' fullWidth PaperProps={{ sx: { backgroundColor: themeMode === 'light' ? 'white' : 'rgb(10, 10, 10)' } }}>
                 <DialogTitle id='dialog-title' aria-describedby='dialog-content' sx={{ textAlign: 'center', fontWeight: 600, fontSize: '1.25rem', color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'white',}}>
