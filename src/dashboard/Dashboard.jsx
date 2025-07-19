@@ -149,16 +149,7 @@ const Dashboard = () => {
 
             try {
                 const querySnapshot = await getDocs(q);
-
-                // const allData = querySnapshot.docs.map((doc) => ({
-                //     id: doc.id,
-                //     ...doc.data(),
-                // }));
-                // console.log(allData);
-
                 const docs = querySnapshot.docs.map((doc) => doc.data());
-                // console.log("documents:")
-                // console.log(docs);
                 resultByWeek[week] = docs;
             } catch (error) {
                 console.error("Error getting documents:", error);
