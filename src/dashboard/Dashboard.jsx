@@ -3,7 +3,7 @@ import { Alert, AppBar, Button, Box, Card, CardContent, createTheme, CssBaseline
 import { app, auth, db } from "../firebase.js";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc, doc, setDoc, documentId, getDoc, getDocs, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, documentId, getDoc, getDocs, serverTimestamp, query, orderBy, where } from 'firebase/firestore';
 import logo_dark from '../assets/smoothie-dark.png';
 import logo_light from '../assets/smoothie-light.png';
 import toggle_dark from '../assets/day.png';
@@ -33,43 +33,7 @@ const Dashboard = () => {
     const [mainDocIDs, setMainDocIDs] = useState([]);
     const [subCollections, setSubCollections] = useState({});
 
-    const fetchMainDocuments = async () => {
-        if (user) {
-            const mainCollectionReference = collection(db, user.uid);
-            const q = query(mainCollectionReference, orderBy("createdAt", "desc")); 
-            const snapshot = await getDocs(q);
-
-            const docIds = snapshot.docs.map(doc => doc.id);
-            setMainDocIDs(docIds);
-        }
-        else {
-            setMainDocIDs([]);
-            return;
-        }
-    };
-
-    const fetchNutritionData = async () => {
-        if (!user) return;
-        const newItems = [];
-        for (const mainDocID of mainDocIDs) {
-            const mealDocRef = doc(db, user.uid, mainDocID, "", "");
-            const mealDocSnap = await getDoc(mealDocRef);
-            if (mealDocSnap.exists()) {
-                const data = mealDocSnap.data();
-                newItems.push({
-                    ["r"]: {
-                        "breakfast": data.Breakfast || [],
-                        "lunch": data.Lunch || [],
-                        "dinner": data.Dinner || [],
-                    }
-                });
-            }
-            else {
-
-            }
-        }
-        
-    };
+    const [weeks, setWeeks] = useState([]);
     
     const handleSnackBarClose = () => {
         setSnackBarOpen(false);
@@ -79,26 +43,16 @@ const Dashboard = () => {
     const checkIfUserHasAlreadyEnteredSomethingForTheDay = async () => {
         if (user) {
             const mainCollection = user.uid;
-
             const todaysDate = new Date();
             const subID = todaysDate.toLocaleDateString("en-US", {
                 year: "numeric",
                 month: "short",
                 day: "numeric"
             });
-
-            const dateObj = new Date(subID);
-
-            const { start, end } = getWeekRange(dateObj); 
-
-            const mainDocumentID = `${start.toDateString()} - ${end.toDateString()}`;
-
-            const subDocRef = doc(db, mainCollection, mainDocumentID, subID, subID);
-
             try {
-                const subDoc = await getDoc(subDocRef);
-
-                if (subDoc.exists()) {
+                const docRef = doc(db, mainCollection, subID);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
                     return true;
                 }
                 else {
@@ -154,7 +108,63 @@ const Dashboard = () => {
         end.setDate(start.getDate() + 6);
 
         return { start, end };
-    }
+    };
+
+    async function getAllWeeks() {
+        let weeks = [];
+
+        const collectionReference = collection(db, user.uid);
+
+        try {
+            const snapshot = await getDocs(collectionReference);
+            
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const week = data.week;
+                weeks.push(week);
+            });
+        }
+        catch (error) {
+            return;
+        }
+
+        let sortedWeeks = weeks.sort((a, b) => {
+            const startA = new Date(a.split(" - ")[0]);
+            const startB = new Date(b.split(" - ")[0]);
+            return startB - startA;
+        });
+
+        setWeeks(sortedWeeks);
+        fetchDocumentsByWeek(sortedWeeks);
+    };
+
+     async function fetchDocumentsByWeek(weeks) {
+        if (!user) return;
+
+        const collectionReference = collection(db, user.uid);
+        const resultByWeek = {};
+
+        for (const week of weeks) {
+            const q = query(collectionReference, where("week", "==", week));
+
+            try {
+                const querySnapshot = await getDocs(q);
+
+                // const allData = querySnapshot.docs.map((doc) => ({
+                //     id: doc.id,
+                //     ...doc.data(),
+                // }));
+                // console.log(allData);
+
+                const docs = querySnapshot.docs.map((doc) => doc.data());
+                // console.log("documents:")
+                // console.log(docs);
+                resultByWeek[week] = docs;
+            } catch (error) {
+                console.error("Error getting documents:", error);
+            }
+        }
+    };
 
     const saveFoodDataToTheDatabase = async () => {
         if (user) {
@@ -166,8 +176,6 @@ const Dashboard = () => {
                 month: "short",
                 day: "numeric"
             });
-                
-            console.log(documentId);
 
             const dateObj = new Date(documentId);
 
@@ -178,39 +186,33 @@ const Dashboard = () => {
                 return;
             }
 
-            const dataToBeSaved = {
-                "Breakfast": breakfastItems,
-                "Lunch": lunchItems,
-                "Dinner": dinnerItems
-            };
-
             const dateFormatOptions = { year: "numeric", month: "short", day: "numeric" };
             const formattedStart = start.toLocaleDateString("en-US", dateFormatOptions);
             const formattedEnd = end.toLocaleDateString("en-US", dateFormatOptions);
 
             const mainDocumentId = `${formattedStart} - ${formattedEnd}`;
 
+            const dataToBeSaved = {
+                "Breakfast": breakfastItems,
+                "Lunch": lunchItems,
+                "Dinner": dinnerItems,
+                "week": mainDocumentId,
+                "id": documentId
+            };
+
             setSnackBarOpen(true);
 
             try {
-                const mainDocumentReference = doc(db, collectionId, mainDocumentId);
-
-                const mainDocSnap = await getDoc(mainDocumentReference);
-
-                if (!mainDocSnap.exists()) {
-                    await setDoc(mainDocumentReference, { "createdAt": serverTimestamp() });
-                }
-
-                const documentReference = doc(db, collectionId, mainDocumentId, documentId, documentId);
-
+                const documentReference = doc(db, user.uid, documentId);
                 await setDoc(documentReference, dataToBeSaved);
+
                 setSnackBarMessage("Successfully saved to the database!");
                 setSnackBarSeverity("success");
-
                 setBreakfastItems(['']);
                 setLunchItems(['']);
-                setDinnerItems(['']);
-            } catch (e) {
+                setLunchItems(['']);
+            }
+            catch (e) {
                 setSnackBarMessage(`Error saving entry to the database: ${e.message}`);
                 setSnackBarSeverity("warning");
             }
@@ -228,7 +230,7 @@ const Dashboard = () => {
 
     useEffect(() => {
         if (user) {
-            fetchMainDocuments();
+            getAllWeeks();
         } else {
             setMainDocIDs([]);
         }
@@ -358,8 +360,8 @@ const Dashboard = () => {
 
             <Box sx={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'flex-start'}}>
                 <Box sx={{ p: 2, maxWidth: '100%', width: 'fit-content' }}>
-                    {mainDocIDs.length !== 0 ? (
-                        mainDocIDs.map(id => (
+                    {weeks.length !== 0 ? (
+                        weeks.map(id => (
                             <Typography key={id} variant="h5" sx={{ color: themeMode === 'light' ? 'black' : 'white', mb: 2 }}>
                                 {id}
                             </Typography>
