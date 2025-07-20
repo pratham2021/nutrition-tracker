@@ -97,6 +97,8 @@ const Dashboard = () => {
         return items.some(item => item === "");
     };
 
+
+
     function getWeekRange(date) {
         const current = new Date(date);
         const day = current.getDay();
@@ -119,7 +121,9 @@ const Dashboard = () => {
             snapshot.forEach((doc) => {
                 const data = doc.data();
                 const week = data.week;
-                weeks.push(week);
+                if (!weeks.includes(week)) {
+                    weeks.push(week);
+                }
             });
         }
         catch (error) {
@@ -352,35 +356,33 @@ const Dashboard = () => {
                     weeks.map((week) => (
                         <Box key={week} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                             <Box sx={{ p: 2, maxWidth: '100%', width: 'fit-content' }}>
-                                <Typography
-                                variant="h5"
-                                sx={{ color: themeMode === 'light' ? 'black' : 'white', mb: 2 }}
-                                >
-                                {week}
+                                <Typography variant="h5" sx={{ color: themeMode === 'light' ? 'black' : 'white', mb: 2 }}>
+                                    {week}
                                 </Typography>
                             </Box>
 
                             <Box sx={{ display: 'flex', justifyContent: items.length * 200 + items.length * 16 < window.innerWidth ? 'center' : 'flex-start', overflowX: 'auto', gap: 2, mb: 2, paddingBottom: '16px', scrollbarWidth: 'thin', scrollbarColor: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(255, 255, 255, 1)', '&::-webkit-scrollbar': { height: '8px' }, '&::-webkit-scrollbar-track': { backgroundColor: '#f0f0f0' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#999', borderRadius: '4px', },}}>
                                 {(weeklyResults[week] || []).map((dayResult) => (
-                                    <Card key={dayResult.day} onClick={viewExistingEntry} sx={{ borderRadius: '15px', minWidth: 200, flexShrink: 0, backgroundColor: 'rgba(0, 0, 0, 0.05)', '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.1)' }, transition: 'background-color 0.3s',}}>
+                                    <Card key={dayResult.day} onClick={viewExistingEntry} sx={{ borderRadius: '15px', width: 'fit-content', maxWidth: 200, maxHeight: 200, backgroundColor: 'rgba(0, 0, 0, 0.05)', flexShrink: 1, '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.1)' }, transition: 'background-color 0.3s', overflowY: 'auto',}}>
                                         <CardContent>
                                             <Typography variant="body1">Breakfast: </Typography>
 
-                                            {(dayResult.Breakfast || []).map((item) => (
-                                                <li>{item}</li>
+                                            {(dayResult.Breakfast || []).map((item, index) => (
+                                                <li key={index} style={{ wordWrap: 'break-word', whiteSpace: 'normal', paddingLeft: '1.2em', listStyleType: 'disc', textIndent: 0,}}>{item}</li>
                                             ))}
 
                                             <Typography variant="body1">Lunch: </Typography>
-
-                                            {(dayResult.Lunch || []).map((item) => (
-                                                <li>{item}</li>
+                                            
+                                            {(dayResult.Lunch || []).map((item, index) => (
+                                                    <li key={index} style={{ wordWrap: 'break-word', whiteSpace: 'normal', paddingLeft: '1.2em', textIndent: '-1.2em', listStyleType: 'disc', textIndent: 0,}}>{item}</li>
                                             ))}
 
                                             <Typography variant="body1">Dinner: </Typography>
-
-                                            {(dayResult.Dinner || []).map((item) => (
-                                                <li>{item}</li>
+                                            
+                                            {(dayResult.Dinner || []).map((item, index) => (
+                                                <li key={index} style={{ wordWrap: 'break-word', whiteSpace: 'normal', paddingLeft: '1.2em', textIndent: '-1.2em', listStyleType: 'disc', textIndent: 0,}}>{item}</li>
                                             ))}
+
                                         </CardContent>
                                     </Card>
                                 ))}
@@ -389,68 +391,67 @@ const Dashboard = () => {
                     ))
                 ) : (
                     <Typography>No entries found. Sorry!</Typography>
-            )}
+                )}
 
-            <Dialog open={openDialog} onClose={closePopUp} aria-labelledby='dialog-title' fullWidth PaperProps={{ sx: { backgroundColor: themeMode === 'light' ? 'white' : 'rgb(10, 10, 10)' } }}>
-                <DialogTitle id='dialog-title' aria-describedby='dialog-content' sx={{ textAlign: 'center', fontWeight: 600, fontSize: '1.25rem', color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'white',}}>
-                    Food Entry
-                </DialogTitle>
+                <Dialog open={openDialog} onClose={closePopUp} aria-labelledby='dialog-title' fullWidth PaperProps={{ sx: { backgroundColor: themeMode === 'light' ? 'white' : 'rgb(10, 10, 10)' } }}>
+                    <DialogTitle id='dialog-title' aria-describedby='dialog-content' sx={{ textAlign: 'center', fontWeight: 600, fontSize: '1.25rem', color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'white',}}>
+                        Food Entry
+                    </DialogTitle>
 
-                <DialogContent>
-                    <Stack spacing={2} margin={2}>
+                    <DialogContent>
+                        <Stack spacing={2} margin={2}>
 
-                    <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)' }}>
-                        Breakfast
-                    </Typography>
+                        <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)' }}>
+                            Breakfast
+                        </Typography>
 
-                    {breakfastItems.map((item, i) => (
-                        <TextField key={i} variant="outlined" label={`Meal ${i + 1}`} value={item} onChange={(e) => handleChange('breakfast', i, e.target.value)} sx={inputSx} fullWidth/>
-                    ))}
+                        {breakfastItems.map((item, i) => (
+                            <TextField key={i} variant="outlined" label={`Meal ${i + 1}`} value={item} onChange={(e) => handleChange('breakfast', i, e.target.value)} sx={inputSx} fullWidth/>
+                        ))}
 
-                    <Button variant="outlined" onClick={() => addField('breakfast')} sx={buttonSx}>
-                        Add Breakfast Item
-                    </Button>
+                        <Button variant="outlined" onClick={() => addField('breakfast')} sx={buttonSx}>
+                            Add Breakfast Item
+                        </Button>
 
-                    <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)' }}>
-                        Lunch
-                    </Typography>
+                        <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)' }}>
+                            Lunch
+                        </Typography>
 
-                    {lunchItems.map((item, i) => (
-                        <TextField key={i} variant="outlined" label={`Meal ${i + 1}`} value={item} onChange={(e) => handleChange('lunch', i, e.target.value)} sx={inputSx} fullWidth/>
-                    ))}
+                        {lunchItems.map((item, i) => (
+                            <TextField key={i} variant="outlined" label={`Meal ${i + 1}`} value={item} onChange={(e) => handleChange('lunch', i, e.target.value)} sx={inputSx} fullWidth/>
+                        ))}
 
-                    <Button variant="outlined" onClick={() => addField('lunch')} sx={buttonSx}>
-                        Add Lunch Item
-                    </Button>
+                        <Button variant="outlined" onClick={() => addField('lunch')} sx={buttonSx}>
+                            Add Lunch Item
+                        </Button>
 
-                    <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)' }}>
-                        Dinner
-                    </Typography>
+                        <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)' }}>
+                            Dinner
+                        </Typography>
 
-                    {dinnerItems.map((item, i) => (
-                        <TextField key={i} variant="outlined" label={`Meal ${i + 1}`} value={item} onChange={(e) => handleChange('dinner', i, e.target.value)} sx={inputSx} fullWidth/>
-                    ))}
-                        
-                    <Button variant="outlined" onClick={() => addField('dinner')} sx={buttonSx}>
-                        Add Dinner Item
-                    </Button>
-                    </Stack>
-                </DialogContent>
+                        {dinnerItems.map((item, i) => (
+                            <TextField key={i} variant="outlined" label={`Meal ${i + 1}`} value={item} onChange={(e) => handleChange('dinner', i, e.target.value)} sx={inputSx} fullWidth/>
+                        ))}
+                                
+                        <Button variant="outlined" onClick={() => addField('dinner')} sx={buttonSx}>
+                            Add Dinner Item
+                        </Button>
+                        </Stack>
+                    </DialogContent>
 
-                <DialogActions>
-                    <Button disableElevation disableRipple variant="contained" onClick={handleSave} sx={{ backgroundColor: 'rgba(78, 196, 4, 1)',color: themeMode === 'light' ? 'rgb(10, 10, 10)' : 'white', '&:hover': { backgroundColor: 'rgba(78, 196, 4, 1)', boxShadow: 'none' },}}>Save</Button>
-                    <Button disableElevation disableRipple variant="contained" color="error" onClick={closePopUp} sx={{ '&:hover': { backgroundColor: (theme) => theme.palette.error.main, boxShadow: 'none' },}}>
-                        Cancel
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                    <DialogActions>
+                        <Button disableElevation disableRipple variant="contained" onClick={handleSave} sx={{ backgroundColor: 'rgba(78, 196, 4, 1)',color: themeMode === 'light' ? 'rgb(10, 10, 10)' : 'white', '&:hover': { backgroundColor: 'rgba(78, 196, 4, 1)', boxShadow: 'none' },}}>Save</Button>
+                        <Button disableElevation disableRipple variant="contained" color="error" onClick={closePopUp} sx={{ '&:hover': { backgroundColor: (theme) => theme.palette.error.main, boxShadow: 'none' },}}>
+                            Cancel
+                        </Button>
+                    </DialogActions>
+                </Dialog>
 
-            <Snackbar open={snackBarOpen} autoHideDuration={2500} onClose={handleSnackBarClose} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-                <Alert onClose={handleSnackBarClose} severity={snackBarSeverity} sx={{ width: '100%' }}>
-                    {snackBarMessage}
-                </Alert>
-            </Snackbar>
-
+                <Snackbar open={snackBarOpen} autoHideDuration={2500} onClose={handleSnackBarClose} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+                    <Alert onClose={handleSnackBarClose} severity={snackBarSeverity} sx={{ width: '100%' }}>
+                        {snackBarMessage}
+                    </Alert>
+                </Snackbar>
         </ThemeProvider>
     )
 };
