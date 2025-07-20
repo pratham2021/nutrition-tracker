@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Alert, AppBar, Button, Box, Card, CardContent, createTheme, CssBaseline,  Dialog, DialogTitle, DialogActions, DialogContent, DialogContentText, Snackbar, Stack, TextField, Toolbar, Typography, ThemeProvider} from '@mui/material';
+import { Alert, AppBar, Button, Box, Card, CardContent, createTheme, CssBaseline,  Dialog, DialogTitle, DialogActions, DialogContent, DialogContentText, Snackbar, Stack, TextField, Toolbar, Typography, ThemeProvider, CardActionArea} from '@mui/material';
 import { app, auth, db } from "../firebase.js";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc, doc, setDoc, documentId, getDoc, getDocs, serverTimestamp, query, orderBy, where } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, documentId, getDoc, getDocs, serverTimestamp, query, orderBy, where, onSnapshot } from 'firebase/firestore';
 import logo_dark from '../assets/smoothie-dark.png';
 import logo_light from '../assets/smoothie-light.png';
 import toggle_dark from '../assets/day.png';
@@ -30,10 +30,8 @@ const Dashboard = () => {
     const [lunchItems, setLunchItems] = useState(['']);
     const [dinnerItems, setDinnerItems] = useState(['']);
 
-    const [mainDocIDs, setMainDocIDs] = useState([]);
-    const [subCollections, setSubCollections] = useState({});
-
     const [weeks, setWeeks] = useState([]);
+    const [weeklyResults, setWeeklyResults] = useState({});
     
     const handleSnackBarClose = () => {
         setSnackBarOpen(false);
@@ -135,26 +133,6 @@ const Dashboard = () => {
         });
 
         setWeeks(sortedWeeks);
-        fetchDocumentsByWeek(sortedWeeks);
-    };
-
-     async function fetchDocumentsByWeek(weeks) {
-        if (!user) return;
-
-        const collectionReference = collection(db, user.uid);
-        const resultByWeek = {};
-
-        for (const week of weeks) {
-            const q = query(collectionReference, where("week", "==", week));
-
-            try {
-                const querySnapshot = await getDocs(q);
-                const docs = querySnapshot.docs.map((doc) => doc.data());
-                resultByWeek[week] = docs;
-            } catch (error) {
-                console.error("Error getting documents:", error);
-            }
-        }
     };
 
     const saveFoodDataToTheDatabase = async () => {
@@ -188,7 +166,8 @@ const Dashboard = () => {
                 "Lunch": lunchItems,
                 "Dinner": dinnerItems,
                 "week": mainDocumentId,
-                "id": documentId
+                "day": documentId,
+                "id": user.uid
             };
 
             setSnackBarOpen(true);
@@ -199,9 +178,10 @@ const Dashboard = () => {
 
                 setSnackBarMessage("Successfully saved to the database!");
                 setSnackBarSeverity("success");
+
                 setBreakfastItems(['']);
                 setLunchItems(['']);
-                setLunchItems(['']);
+                setDinnerItems(['']);
             }
             catch (e) {
                 setSnackBarMessage(`Error saving entry to the database: ${e.message}`);
@@ -222,8 +202,6 @@ const Dashboard = () => {
     useEffect(() => {
         if (user) {
             getAllWeeks();
-        } else {
-            setMainDocIDs([]);
         }
     }, [user]);
 
@@ -237,6 +215,28 @@ const Dashboard = () => {
             }
         });
     }, []);
+
+    useEffect(() => {
+        if (!user || weeks.length === 0) return;
+
+        const collectionReference = collection(db, user.uid);
+        const unsubscribes = [];
+
+        for (const week of weeks) {
+            const q = query(collectionReference, where("week", "==", week));
+
+            const unsubscribe = onSnapshot(q, (querySnapshot) => {
+                const docs = querySnapshot.docs.map((doc) => doc.data());
+                setWeeklyResults((prev) => ({ ...prev, [week]: docs }));
+            });
+
+            unsubscribes.push(unsubscribe);
+        }
+
+        return () => {
+            unsubscribes.forEach((unsub) => unsub());
+        };
+    }, [user, weeks]);
 
     const handleChange = (meal, index, value) => {
         let setter;
@@ -317,67 +317,79 @@ const Dashboard = () => {
     };
         
     return (
-    <>
         <ThemeProvider theme={theme}>
-            <CssBaseline/>
-            <AppBar elevation={0} sx={{ bgcolor: themeMode === 'light' ? '#f4efefff' : '#000000', px: '56px', py: 0.5, height: '64px' }}>
-                <Toolbar sx={{ minHeight: '64px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Box>
-                        <Stack direction="column" spacing={0.3} alignItems='center'>
-                            <img src={themeMode === 'light' ? logo_light : logo_dark} alt="logo" style={{ width: '36px', height: '36px', filter: themeMode === 'light' ? 'none' : 'brightness(0) invert(1)', cursor: 'pointer',}}/>
-                    
-                            <Typography variant="h6" component="div" sx={{ fontSize: '1rem', color: themeMode === 'light' ? 'black': 'white', mt: '0px', fontWeight: 550, textAlign: 'center' }}>
-                                NutriLife
-                            </Typography>
-                        </Stack>
-                    </Box>
+                <CssBaseline/>
+                <AppBar elevation={0} sx={{ bgcolor: themeMode === 'light' ? '#f4efefff' : '#000000', px: '56px', py: 0.5, height: '64px' }}>
+                    <Toolbar sx={{ minHeight: '64px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box>
+                            <Stack direction="column" spacing={0.3} alignItems='center'>
+                                <img src={themeMode === 'light' ? logo_light : logo_dark} alt="logo" style={{ width: '36px', height: '36px', filter: themeMode === 'light' ? 'none' : 'brightness(0) invert(1)', cursor: 'pointer',}}/>
+                        
+                                <Typography variant="h6" component="div" sx={{ fontSize: '1rem', color: themeMode === 'light' ? 'black': 'white', mt: '0px', fontWeight: 550, textAlign: 'center' }}>
+                                    NutriLife
+                                </Typography>
+                            </Stack>
+                        </Box>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Stack direction="row" spacing={2}>
-                            <Button onClick={handleSignOut} sx={{ color: themeMode === 'light' ? 'black':'white', backgroundColor: 'rgba(78, 196, 4, 1)', fontSize: '0.95rem', height: '30px', padding: '0.4rem 0.75rem', minWidth: '64px', lineHeight: 1.2, boxSizing: 'border-box', textTransform: 'none', '&:hover': { backgroundColor: 'rgba(78, 196, 4, 1)', boxShadow: 'none',} }}>
-                                Log Out
-                            </Button>
-                        </Stack>
-                    
-                        <img src={themeMode === 'light' ? toggle_light : toggle_dark} alt="toggle theme" onClick={toggleTheme} style={{ width: '36px', height: '36px', marginLeft: '20px', cursor: 'pointer', filter: themeMode === 'light' ? 'none' : 'brightness(0) invert(1)', }}/>
-                    </Box>
-                </Toolbar>
-            </AppBar>
-            <Toolbar/>
-
-            <Box sx={{ display: 'inline-flex', justifyContent: 'flex-start', mt: 2, px: 2,}}>
-                <Button disableFocusRipple disableRipple disableElevation onClick={bringUpNewEntryPopUp} variant="contained" sx={{ height: '30px', padding: '0.4rem 0.75rem', minWidth: '64px', lineHeight: 1.2, boxSizing: 'border-box', fontSize: '0.95rem', color: themeMode === 'light' ? 'black':'white', backgroundColor:'rgba(78, 196, 4, 1)', textTransform: 'none',}}>Add</Button>
-            </Box>
-
-            <Box sx={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'flex-start'}}>
-                <Box sx={{ p: 2, maxWidth: '100%', width: 'fit-content' }}>
-                    {weeks.length !== 0 ? (
-                        weeks.map(id => (
-                            <Typography key={id} variant="h5" sx={{ color: themeMode === 'light' ? 'black' : 'white', mb: 2 }}>
-                                {id}
-                            </Typography>
-                        ))
-                    ) : (
-                        <Typography>No entries found.</Typography>
-                    )}
-                
-                    <Box sx={{ display: 'flex', justifyContent: items.length * 200 + items.length * 16 < window.innerWidth ? 'center' : 'flex-start', overflowX: 'auto', gap: 2, mb: 2, paddingBottom: '16px', scrollbarWidth: 'thin', '&::-webkit-scrollbar': { height: '8px' },'&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '4px',}, }}>
-                        {items.map((item, index) => (
-                            <Card onClick={viewExistingEntry} key={index} sx={{ borderRadius:'15px', minWidth: 200, flexShrink: 0, backgroundColor: 'rgba(0, 0, 0, 0.05)', '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.1)', }, transition: 'background-color 0.3s', }}>
-                                <CardContent>
-                                    <Typography variant="h6">{item}</Typography>
-                                    <Typography variant="body2">Some content</Typography>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </Box>
-                    
-                    <Typography variant="body1">
-                        Message
-                    </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Stack direction="row" spacing={2}>
+                                <Button onClick={handleSignOut} sx={{ color: themeMode === 'light' ? 'black':'white', backgroundColor: 'rgba(78, 196, 4, 1)', fontSize: '0.95rem', height: '30px', padding: '0.4rem 0.75rem', minWidth: '64px', lineHeight: 1.2, boxSizing: 'border-box', textTransform: 'none', '&:hover': { backgroundColor: 'rgba(78, 196, 4, 1)', boxShadow: 'none',} }}>
+                                    Log Out
+                                </Button>
+                            </Stack>
+                        
+                            <img src={themeMode === 'light' ? toggle_light : toggle_dark} alt="toggle theme" onClick={toggleTheme} style={{ width: '36px', height: '36px', marginLeft: '20px', cursor: 'pointer', filter: themeMode === 'light' ? 'none' : 'brightness(0) invert(1)', }}/>
+                        </Box>
+                    </Toolbar>
+                </AppBar>
+                <Toolbar/>
+            
+                <Box sx={{ display: 'inline-flex', justifyContent: 'flex-start', mt: 2, px: 2,}}>
+                    <Button disableFocusRipple disableRipple disableElevation onClick={bringUpNewEntryPopUp} variant="contained" sx={{ height: '30px', padding: '0.4rem 0.75rem', minWidth: '64px', lineHeight: 1.2, boxSizing: 'border-box', fontSize: '0.95rem', color: themeMode === 'light' ? 'black':'white', backgroundColor:'rgba(78, 196, 4, 1)', textTransform: 'none',}}>Add</Button>
                 </Box>
-            </Box>
 
+                {weeks.length !== 0 ? (
+                    weeks.map((week) => (
+                        <Box key={week} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <Box sx={{ p: 2, maxWidth: '100%', width: 'fit-content' }}>
+                                <Typography
+                                variant="h5"
+                                sx={{ color: themeMode === 'light' ? 'black' : 'white', mb: 2 }}
+                                >
+                                {week}
+                                </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', justifyContent: items.length * 200 + items.length * 16 < window.innerWidth ? 'center' : 'flex-start', overflowX: 'auto', gap: 2, mb: 2, paddingBottom: '16px', scrollbarWidth: 'thin', scrollbarColor: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(255, 255, 255, 1)', '&::-webkit-scrollbar': { height: '8px' }, '&::-webkit-scrollbar-track': { backgroundColor: '#f0f0f0' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#999', borderRadius: '4px', },}}>
+                                {(weeklyResults[week] || []).map((dayResult) => (
+                                    <Card key={dayResult.day} onClick={viewExistingEntry} sx={{ borderRadius: '15px', minWidth: 200, flexShrink: 0, backgroundColor: 'rgba(0, 0, 0, 0.05)', '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.1)' }, transition: 'background-color 0.3s',}}>
+                                        <CardContent>
+                                            <Typography variant="body1">Breakfast: </Typography>
+
+                                            {(dayResult.Breakfast || []).map((item) => (
+                                                <li>{item}</li>
+                                            ))}
+
+                                            <Typography variant="body1">Lunch: </Typography>
+
+                                            {(dayResult.Lunch || []).map((item) => (
+                                                <li>{item}</li>
+                                            ))}
+
+                                            <Typography variant="body1">Dinner: </Typography>
+
+                                            {(dayResult.Dinner || []).map((item) => (
+                                                <li>{item}</li>
+                                            ))}
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </Box>
+                        </Box>
+                    ))
+                ) : (
+                    <Typography>No entries found. Sorry!</Typography>
+            )}
 
             <Dialog open={openDialog} onClose={closePopUp} aria-labelledby='dialog-title' fullWidth PaperProps={{ sx: { backgroundColor: themeMode === 'light' ? 'white' : 'rgb(10, 10, 10)' } }}>
                 <DialogTitle id='dialog-title' aria-describedby='dialog-content' sx={{ textAlign: 'center', fontWeight: 600, fontSize: '1.25rem', color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'white',}}>
@@ -418,7 +430,7 @@ const Dashboard = () => {
                     {dinnerItems.map((item, i) => (
                         <TextField key={i} variant="outlined" label={`Meal ${i + 1}`} value={item} onChange={(e) => handleChange('dinner', i, e.target.value)} sx={inputSx} fullWidth/>
                     ))}
-                    
+                        
                     <Button variant="outlined" onClick={() => addField('dinner')} sx={buttonSx}>
                         Add Dinner Item
                     </Button>
@@ -440,8 +452,7 @@ const Dashboard = () => {
             </Snackbar>
 
         </ThemeProvider>
-    </>
-    );
+    )
 };
 
 export default Dashboard;
