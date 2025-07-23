@@ -8,7 +8,7 @@ import logo_dark from '../assets/smoothie-dark.png';
 import logo_light from '../assets/smoothie-light.png';
 import toggle_dark from '../assets/day.png';
 import toggle_light from '../assets/night.png';
-import ReusableComponent from '../components/ReusableComponent.jsx';
+import { getFunctions, httpsCallable } from 'firebase/functions'
 
 const Dashboard = () => {
 
@@ -97,8 +97,6 @@ const Dashboard = () => {
         return items.some(item => item === "");
     };
 
-
-
     function getWeekRange(date) {
         const current = new Date(date);
         const day = current.getDay();
@@ -106,8 +104,62 @@ const Dashboard = () => {
         start.setDate(current.getDate() - day);
         const end = new Date(start);
         end.setDate(start.getDate() + 6);
-
         return { start, end };
+    };
+
+    const generateAssignPrompt = async (prompt) => {
+        const functions = getFunctions();
+        const chatCompletion = httpsCallable(functions, 'chatCompletion');
+        try {
+            const data = { prompt }
+            const result = await chatCompletion(data);
+            const suggestion = result.data.aiResponse;
+            console.log(suggestion);
+            return suggestion;
+        } catch (error) {
+            
+        }
+    };
+
+    function listOutFoods(array) {
+        if (!array || array.length === 0) return "";
+
+        if (array.length === 1) {
+            return array[0];
+        }
+        else if (array.length === 2) {
+            return `${array[0]} and ${array[1]}`;
+        }
+
+        const allButLast = array.slice(0, -1).join(", ");
+        const last = array[array.length - 1];
+        return `${allButLast}, and ${last}`;
+    }
+
+    function engineerPrompt(newResults) {
+        var flaged = false;
+        const weekSummaries = {};
+        for (const week of weeks) {
+            var string = "";
+            if (week in newResults) {
+                if (!(week in AIResponses)) {
+                    const weekMeals = newResults[week];
+                    for (let i = 0; i < weekMeals.length; i++) {
+                        const breakfast_listed = listOutFoods(weekMeals[i].Breakfast);
+                        const lunch_listed = listOutFoods(weekMeals[i].Lunch);
+                        const dinner_listed = listOutFoods(weekMeals[i].Dinner);
+                        string += `On ${weekMeals[i].day}, I had ${breakfast_listed} for breakfast. For lunch, I had ${lunch_listed}. For dinner, I had ${dinner_listed}. `;
+                    }
+
+                    string += "Generate me a three sentence detailing what improvements can be made to the user's diet.";
+                    weekSummaries[week] = string;
+                    
+                    generateAssignPrompt(string);
+                }
+            }
+        };
+
+        console.log(weekSummaries["Jul 20, 2025 - Jul 26, 2025"]);
     };
 
     async function getAllWeeks() {
@@ -231,7 +283,11 @@ const Dashboard = () => {
 
             const unsubscribe = onSnapshot(q, (querySnapshot) => {
                 const docs = querySnapshot.docs.map((doc) => doc.data());
-                setWeeklyResults((prev) => ({ ...prev, [week]: docs }));
+                setWeeklyResults((prev) => {
+                    const newResults = { ...prev, [week]: docs };
+                    engineerPrompt(newResults);
+                    return newResults;
+                });
             });
 
             unsubscribes.push(unsubscribe);
@@ -293,7 +349,7 @@ const Dashboard = () => {
 
     const handleSave = () => {
         saveFoodDataToTheDatabase();
-        console.log("Closing...")
+        console.log("Closing...");
         closePopUp();
     };
 
@@ -363,35 +419,41 @@ const Dashboard = () => {
 
                             <Box sx={{ display: 'flex', justifyContent: items.length * 200 + items.length * 16 < window.innerWidth ? 'center' : 'flex-start', overflowX: 'auto', gap: 2, mb: 2, paddingBottom: '16px', scrollbarWidth: 'thin', scrollbarColor: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(255, 255, 255, 1)', '&::-webkit-scrollbar': { height: '8px' }, '&::-webkit-scrollbar-track': { backgroundColor: '#f0f0f0' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#999', borderRadius: '4px', },}}>
                                 {(weeklyResults[week] || []).map((dayResult) => (
-                                    <Card key={dayResult.day} onClick={viewExistingEntry} sx={{ borderRadius: '15px', width: 'fit-content', maxWidth: 200, maxHeight: 200, backgroundColor: 'rgba(0, 0, 0, 0.05)', flexShrink: 1, '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.1)' }, transition: 'background-color 0.3s', overflowY: 'auto',}}>
+                                    <Card key={dayResult.day} onClick={() => viewExistingEntry(dayResult.day)} sx={{ borderRadius: '15px', width: 'fit-content', maxWidth: 200, maxHeight: 200, backgroundColor: 'rgba(0, 0, 0, 0.05)', flexShrink: 1, '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.1)' }, transition: 'background-color 0.3s', overflowY: 'auto',}}>
                                         <CardContent>
+                                            <Typography variant="body1" align="center" sx={{ fontWeight: 'bold', mb: 1.5 }}>{dayResult.day}</Typography>
+
                                             <Typography variant="body1">Breakfast: </Typography>
 
                                             {(dayResult.Breakfast || []).map((item, index) => (
-                                                <li key={index} style={{ wordWrap: 'break-word', whiteSpace: 'normal', paddingLeft: '1.2em', listStyleType: 'disc', textIndent: 0,}}>{item}</li>
+                                                <li key={index} style={{ wordWrap: 'break-word', whiteSpace: 'normal', paddingLeft: '1.2em', listStyleType: 'disc', textIndent: '-1.2em',}}>{item}</li>
                                             ))}
 
                                             <Typography variant="body1">Lunch: </Typography>
                                             
                                             {(dayResult.Lunch || []).map((item, index) => (
-                                                    <li key={index} style={{ wordWrap: 'break-word', whiteSpace: 'normal', paddingLeft: '1.2em', textIndent: '-1.2em', listStyleType: 'disc', textIndent: 0,}}>{item}</li>
+                                                <li key={index} style={{ wordWrap: 'break-word', whiteSpace: 'normal', paddingLeft: '1.2em', listStyleType: 'disc', textIndent: '-1.2em',}}>{item}</li>
                                             ))}
 
                                             <Typography variant="body1">Dinner: </Typography>
                                             
                                             {(dayResult.Dinner || []).map((item, index) => (
-                                                <li key={index} style={{ wordWrap: 'break-word', whiteSpace: 'normal', paddingLeft: '1.2em', textIndent: '-1.2em', listStyleType: 'disc', textIndent: 0,}}>{item}</li>
+                                                <li key={index} style={{ wordWrap: 'break-word', whiteSpace: 'normal', paddingLeft: '1.2em', listStyleType: 'disc', textIndent: '-1.2em',}}>{item}</li>
                                             ))}
 
                                         </CardContent>
                                     </Card>
                                 ))}
                             </Box>
+                            <Typography>{AIResponses[week] || ""}</Typography>
                         </Box>
+                        
                     ))
                 ) : (
                     <Typography>No entries found. Sorry!</Typography>
                 )}
+
+                
 
                 <Dialog open={openDialog} onClose={closePopUp} aria-labelledby='dialog-title' fullWidth PaperProps={{ sx: { backgroundColor: themeMode === 'light' ? 'white' : 'rgb(10, 10, 10)' } }}>
                     <DialogTitle id='dialog-title' aria-describedby='dialog-content' sx={{ textAlign: 'center', fontWeight: 600, fontSize: '1.25rem', color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'white',}}>
@@ -452,6 +514,8 @@ const Dashboard = () => {
                         {snackBarMessage}
                     </Alert>
                 </Snackbar>
+
+
         </ThemeProvider>
     )
 };
