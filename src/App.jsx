@@ -2,7 +2,6 @@ import React, { useState, useMemo } from "react";
 import SignUpForm from './components/SignUpForm.jsx';
 import SignInForm from "./components/SignInForm.jsx";
 import { AppBar, Button, Toolbar, Typography, Box, createTheme, CssBaseline, Stack, ThemeProvider} from '@mui/material';
-import logo_dark from './assets/smoothie-dark.png';
 import logo_light from './assets/smoothie-light.png';
 import toggle_dark from './assets/day.png';
 import toggle_light from './assets/night.png';
@@ -38,7 +37,7 @@ function App() {
                 <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box>
                     <Stack direction="column" spacing={0.3} alignItems='center'>
-                      <img src={themeMode === 'light' ? logo_light : logo_dark} alt="logo" style={{ width: '36px', filter: themeMode === 'light' ? 'none' : 'brightness(0) invert(1)', cursor: 'pointer',}}/>
+                      <img src={logo_light} alt="logo" style={{ width: '36px', filter: themeMode === 'light' ? 'none' : 'brightness(0) invert(1)', cursor: 'pointer',}}/>
 
                       <Typography variant="h6" component="div" sx={{ fontSize: '1rem', color: themeMode === 'light' ? 'black': 'white', mt: '0px', fontWeight: 550, textAlign: 'center' }}>
                           NutriLife

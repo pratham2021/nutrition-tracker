@@ -4,18 +4,15 @@ import { app, auth, db } from "../firebase.js";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, doc, setDoc, documentId, getDoc, getDocs, serverTimestamp, query, orderBy, where, onSnapshot } from 'firebase/firestore';
-import logo_dark from '../assets/smoothie-dark.png';
 import logo_light from '../assets/smoothie-light.png';
 import toggle_dark from '../assets/day.png';
 import toggle_light from '../assets/night.png';
-import { getFunctions, httpsCallable } from 'firebase/functions'
 
 const Dashboard = () => {
 
     const [user, setUser] = useState(null);
     const [themeMode, setThemeMode] = useState('light');
     const navigate = useNavigate();
-    // const [items, setItems] = useState([]);
     const items = Array.from({ length: 20 }, (_, i) => `Card ${1}`);
     const [openDialog, setOpenDialog] = useState(false);
     const [errors, setErrors] = useState();
@@ -107,18 +104,8 @@ const Dashboard = () => {
         return { start, end };
     };
 
-    const generateAssignPrompt = async (prompt) => {
-        const functions = getFunctions();
-        const chatCompletion = httpsCallable(functions, 'chatCompletion');
-        try {
-            const data = { prompt }
-            const result = await chatCompletion(data);
-            const suggestion = result.data.aiResponse;
-            console.log(suggestion);
-            return suggestion;
-        } catch (error) {
-            
-        }
+    const generateSuggestions = async (prompt) => {
+        
     };
 
     function listOutFoods(array) {
@@ -137,7 +124,6 @@ const Dashboard = () => {
     }
 
     function engineerPrompt(newResults) {
-        var flaged = false;
         const weekSummaries = {};
         for (const week of weeks) {
             var string = "";
@@ -153,13 +139,10 @@ const Dashboard = () => {
 
                     string += "Generate me a three sentence detailing what improvements can be made to the user's diet.";
                     weekSummaries[week] = string;
-                    
-                    generateAssignPrompt(string);
                 }
             }
         };
 
-        console.log(weekSummaries["Jul 20, 2025 - Jul 26, 2025"]);
     };
 
     async function getAllWeeks() {
@@ -383,7 +366,7 @@ const Dashboard = () => {
                     <Toolbar sx={{ minHeight: '64px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Box>
                             <Stack direction="column" spacing={0.3} alignItems='center'>
-                                <img src={themeMode === 'light' ? logo_light : logo_dark} alt="logo" style={{ width: '36px', height: '36px', filter: themeMode === 'light' ? 'none' : 'brightness(0) invert(1)', cursor: 'pointer',}}/>
+                                <img src={logo_light} alt="logo" style={{ width: '36px', height: '36px', filter: themeMode === 'light' ? 'none' : 'brightness(0) invert(1)', cursor: 'pointer',}}/>
                         
                                 <Typography variant="h6" component="div" sx={{ fontSize: '1rem', color: themeMode === 'light' ? 'black': 'white', mt: '0px', fontWeight: 550, textAlign: 'center' }}>
                                     NutriLife
@@ -450,7 +433,7 @@ const Dashboard = () => {
                         
                     ))
                 ) : (
-                    <Typography>No entries found. Sorry!</Typography>
+                    <Typography></Typography>
                 )}
 
                 
