@@ -3,10 +3,11 @@ import { Alert, AppBar, Button, Box, Card, CardContent, createTheme, CssBaseline
 import { app, auth, db } from "../firebase.js";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc, doc, setDoc, documentId, getDoc, getDocs, serverTimestamp, query, orderBy, where, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, documentId, getDoc, getDocs, query, where, onSnapshot } from 'firebase/firestore';
 import logo_light from '../assets/smoothie-light.png';
 import toggle_dark from '../assets/day.png';
 import toggle_light from '../assets/night.png';
+import axios from 'axios';
 
 const Dashboard = () => {
 
@@ -14,6 +15,7 @@ const Dashboard = () => {
     const [themeMode, setThemeMode] = useState('light');
     const navigate = useNavigate();
     const items = Array.from({ length: 20 }, (_, i) => `Card ${1}`);
+
     const [openDialog, setOpenDialog] = useState(false);
     const [errors, setErrors] = useState();
 
@@ -72,8 +74,20 @@ const Dashboard = () => {
         }
     };
 
-    const viewExistingEntry = () => {
-        console.log("Card Clicked!");
+    const viewExistingEntry = async (dayId) => {
+        if (user) {
+            const collectionName = user.uid;
+            const docRef = doc(db, collectionName, dayId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const documentData = docSnap.data();
+                console.log(documentData);
+                setOpenDialog(true);
+                setBreakfastItems(documentData.Breakfast);
+                setLunchItems(documentData.Lunch);
+                setDinnerItems(documentData.Dinner);
+            }
+        }
     };
 
     const closePopUp = () => {
@@ -104,8 +118,43 @@ const Dashboard = () => {
         return { start, end };
     };
 
+    const [weekSummaries, setWeeklySummaries] = useState({});
+
     const generateSuggestions = async (prompt) => {
-        
+        const msg = [
+            {
+                role: "system",
+                content: "You are an assistant that suggests healthy diet reccommendations to users. Make sure to answer in complete sentences!"            
+            },
+            {
+                role: "user",
+                content: prompt
+            }
+        ];
+
+        try {
+
+            const response = await axios({
+                method: "POST",
+                url: "https://api.openai.com/v1/chat/completions",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${import.meta.env.VITE_OPEN_AI_API_KEY}`,
+                },
+                data: {
+                    model: 'gpt-3.5-turbo',
+                    messages: msg,
+                    temperature: 1,
+                    top_p: 1,
+                    max_tokens: 90,
+                },
+            });
+
+            // console.log(response.data.choices[0].message.content);
+            return response.data.choices[0].message.content || "";
+        } catch (error) {
+            console.log("Something went wrong. Couldn't fetch you a response.")
+        }
     };
 
     function listOutFoods(array) {
@@ -123,12 +172,11 @@ const Dashboard = () => {
         return `${allButLast}, and ${last}`;
     }
 
-    function engineerPrompt(newResults) {
-        const weekSummaries = {};
+    async function engineerPrompt(newResults) {
         for (const week of weeks) {
             var string = "";
             if (week in newResults) {
-                if (!(week in AIResponses)) {
+                if (!(week in weekSummaries)) {
                     const weekMeals = newResults[week];
                     for (let i = 0; i < weekMeals.length; i++) {
                         const breakfast_listed = listOutFoods(weekMeals[i].Breakfast);
@@ -136,14 +184,35 @@ const Dashboard = () => {
                         const dinner_listed = listOutFoods(weekMeals[i].Dinner);
                         string += `On ${weekMeals[i].day}, I had ${breakfast_listed} for breakfast. For lunch, I had ${lunch_listed}. For dinner, I had ${dinner_listed}. `;
                     }
-
-                    string += "Generate me a three sentence detailing what improvements can be made to the user's diet.";
-                    weekSummaries[week] = string;
+                    string += "Generate me a five sentence detailing what improvements can be made to the user's diet.";
+                    var weeklyDietSuggestion = await generateSuggestions(string);
+                    await addFieldToWeekDocs(week, weeklyDietSuggestion);
                 }
             }
         };
-
+        console.log(weekSummaries["Jul 13, 2025 - Jul 19, 2025"])
+        console.log(weekSummaries["Jul 20, 2025 - Jul 26, 2025"])
     };
+
+    const addFieldToWeekDocs = async (weekValue, suggestion) => {
+        if (user) {
+            try {
+                const q = query(collection(db, user.uid), where('week', '==', weekValue));
+                
+                const snapshot = await getDocs(q);
+
+                const updatePromises = snapshot.docs.map(doc => 
+                    updateDoc(doc.ref, {
+                        "suggestion": suggestion
+                    })
+                );
+
+                await Promise.all(updatePromises);
+            } catch (error) {
+
+            }
+        }
+    }
 
     async function getAllWeeks() {
         let weeks = [];
@@ -174,7 +243,8 @@ const Dashboard = () => {
         setWeeks(sortedWeeks);
     };
 
-    const saveFoodDataToTheDatabase = async () => {
+    // update it if it exists but creates a document if it does exist
+    const saveFoodDataToTheDatabase = async (week) => {
         if (user) {
             const collectionId = user.uid;
 
@@ -268,7 +338,6 @@ const Dashboard = () => {
                 const docs = querySnapshot.docs.map((doc) => doc.data());
                 setWeeklyResults((prev) => {
                     const newResults = { ...prev, [week]: docs };
-                    engineerPrompt(newResults);
                     return newResults;
                 });
             });
@@ -330,8 +399,8 @@ const Dashboard = () => {
         setter(items);
     };
 
-    const handleSave = () => {
-        saveFoodDataToTheDatabase();
+    const handleSave = (week) => {
+        saveFoodDataToTheDatabase(week);
         console.log("Closing...");
         closePopUp();
     };
@@ -428,69 +497,66 @@ const Dashboard = () => {
                                     </Card>
                                 ))}
                             </Box>
-                            <Typography>{AIResponses[week] || ""}</Typography>
-                        </Box>
-                        
+                            <Typography sx={{ marginLeft: '2em', textIndent: '2em' }}></Typography>
+
+                            <Dialog open={openDialog} onClose={closePopUp} aria-labelledby='dialog-title' fullWidth PaperProps={{ sx: { backgroundColor: themeMode === 'light' ? 'white' : 'rgb(10, 10, 10)' } }}>
+                                <DialogTitle id='dialog-title' aria-describedby='dialog-content' sx={{ textAlign: 'center', fontWeight: 600, fontSize: '1.25rem', color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'white',}}>
+                                    Food Entry
+                                </DialogTitle>
+
+                                <DialogContent>
+                                    <Stack spacing={2} margin={2}>
+
+                                    <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)' }}>
+                                        Breakfast
+                                    </Typography>
+
+                                    {breakfastItems.map((item, i) => (
+                                        <TextField key={i} variant="outlined" label={`Meal ${i + 1}`} value={item} onChange={(e) => handleChange('breakfast', i, e.target.value)} sx={inputSx} fullWidth/>
+                                    ))}
+
+                                    <Button variant="outlined" onClick={() => addField('breakfast')} sx={buttonSx}>
+                                        Add Breakfast Item
+                                    </Button>
+
+                                    <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)' }}>
+                                        Lunch
+                                    </Typography>
+
+                                    {lunchItems.map((item, i) => (
+                                        <TextField key={i} variant="outlined" label={`Meal ${i + 1}`} value={item} onChange={(e) => handleChange('lunch', i, e.target.value)} sx={inputSx} fullWidth/>
+                                    ))}
+
+                                    <Button variant="outlined" onClick={() => addField('lunch')} sx={buttonSx}>
+                                        Add Lunch Item
+                                    </Button>
+
+                                    <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)' }}>
+                                        Dinner
+                                    </Typography>
+
+                                    {dinnerItems.map((item, i) => (
+                                        <TextField key={i} variant="outlined" label={`Meal ${i + 1}`} value={item} onChange={(e) => handleChange('dinner', i, e.target.value)} sx={inputSx} fullWidth/>
+                                    ))}
+                                            
+                                    <Button variant="outlined" onClick={() => addField('dinner')} sx={buttonSx}>
+                                        Add Dinner Item
+                                    </Button>
+                                    </Stack>
+                                </DialogContent>
+
+                                <DialogActions>
+                                    <Button disableElevation disableRipple variant="contained" onClick={() => handleSave(week)} sx={{ backgroundColor: 'rgba(78, 196, 4, 1)',color: themeMode === 'light' ? 'rgb(10, 10, 10)' : 'white', '&:hover': { backgroundColor: 'rgba(78, 196, 4, 1)', boxShadow: 'none' },}}>Save</Button>
+                                    <Button disableElevation disableRipple variant="contained" color="error" onClick={closePopUp} sx={{ '&:hover': { backgroundColor: (theme) => theme.palette.error.main, boxShadow: 'none' },}}>
+                                        Cancel
+                                    </Button>
+                                </DialogActions>
+                            </Dialog>
+                        </Box>                        
                     ))
                 ) : (
                     <Typography></Typography>
                 )}
-
-                
-
-                <Dialog open={openDialog} onClose={closePopUp} aria-labelledby='dialog-title' fullWidth PaperProps={{ sx: { backgroundColor: themeMode === 'light' ? 'white' : 'rgb(10, 10, 10)' } }}>
-                    <DialogTitle id='dialog-title' aria-describedby='dialog-content' sx={{ textAlign: 'center', fontWeight: 600, fontSize: '1.25rem', color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'white',}}>
-                        Food Entry
-                    </DialogTitle>
-
-                    <DialogContent>
-                        <Stack spacing={2} margin={2}>
-
-                        <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)' }}>
-                            Breakfast
-                        </Typography>
-
-                        {breakfastItems.map((item, i) => (
-                            <TextField key={i} variant="outlined" label={`Meal ${i + 1}`} value={item} onChange={(e) => handleChange('breakfast', i, e.target.value)} sx={inputSx} fullWidth/>
-                        ))}
-
-                        <Button variant="outlined" onClick={() => addField('breakfast')} sx={buttonSx}>
-                            Add Breakfast Item
-                        </Button>
-
-                        <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)' }}>
-                            Lunch
-                        </Typography>
-
-                        {lunchItems.map((item, i) => (
-                            <TextField key={i} variant="outlined" label={`Meal ${i + 1}`} value={item} onChange={(e) => handleChange('lunch', i, e.target.value)} sx={inputSx} fullWidth/>
-                        ))}
-
-                        <Button variant="outlined" onClick={() => addField('lunch')} sx={buttonSx}>
-                            Add Lunch Item
-                        </Button>
-
-                        <Typography sx={{ color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'rgba(78, 196, 4, 1)' }}>
-                            Dinner
-                        </Typography>
-
-                        {dinnerItems.map((item, i) => (
-                            <TextField key={i} variant="outlined" label={`Meal ${i + 1}`} value={item} onChange={(e) => handleChange('dinner', i, e.target.value)} sx={inputSx} fullWidth/>
-                        ))}
-                                
-                        <Button variant="outlined" onClick={() => addField('dinner')} sx={buttonSx}>
-                            Add Dinner Item
-                        </Button>
-                        </Stack>
-                    </DialogContent>
-
-                    <DialogActions>
-                        <Button disableElevation disableRipple variant="contained" onClick={handleSave} sx={{ backgroundColor: 'rgba(78, 196, 4, 1)',color: themeMode === 'light' ? 'rgb(10, 10, 10)' : 'white', '&:hover': { backgroundColor: 'rgba(78, 196, 4, 1)', boxShadow: 'none' },}}>Save</Button>
-                        <Button disableElevation disableRipple variant="contained" color="error" onClick={closePopUp} sx={{ '&:hover': { backgroundColor: (theme) => theme.palette.error.main, boxShadow: 'none' },}}>
-                            Cancel
-                        </Button>
-                    </DialogActions>
-                </Dialog>
 
                 <Snackbar open={snackBarOpen} autoHideDuration={2500} onClose={handleSnackBarClose} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
                     <Alert onClose={handleSnackBarClose} severity={snackBarSeverity} sx={{ width: '100%' }}>
