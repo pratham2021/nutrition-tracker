@@ -3,7 +3,7 @@ import { Alert, AppBar, Button, Box, Card, CardContent, createTheme, CssBaseline
 import { app, auth, db } from "../firebase.js";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc, doc, setDoc, documentId, getDoc, getDocs, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, documentId, getDoc, getDocs, query, where, onSnapshot, updateDoc, writeBatch } from 'firebase/firestore';
 import logo_light from '../assets/smoothie-light.png';
 import toggle_dark from '../assets/day.png';
 import toggle_light from '../assets/night.png';
@@ -118,7 +118,7 @@ const Dashboard = () => {
         return { start, end };
     };
 
-    const [weekSummaries, setWeeklySummaries] = useState({});
+    // const [weekSummaries, setWeeklySummaries] = useState({});
 
     const generateSuggestions = async (prompt) => {
         const msg = [
@@ -172,47 +172,47 @@ const Dashboard = () => {
         return `${allButLast}, and ${last}`;
     }
 
-    async function engineerPrompt(newResults) {
-        for (const week of weeks) {
-            var string = "";
-            if (week in newResults) {
-                if (!(week in weekSummaries)) {
-                    const weekMeals = newResults[week];
-                    for (let i = 0; i < weekMeals.length; i++) {
-                        const breakfast_listed = listOutFoods(weekMeals[i].Breakfast);
-                        const lunch_listed = listOutFoods(weekMeals[i].Lunch);
-                        const dinner_listed = listOutFoods(weekMeals[i].Dinner);
-                        string += `On ${weekMeals[i].day}, I had ${breakfast_listed} for breakfast. For lunch, I had ${lunch_listed}. For dinner, I had ${dinner_listed}. `;
-                    }
-                    string += "Generate me a five sentence detailing what improvements can be made to the user's diet.";
-                    var weeklyDietSuggestion = await generateSuggestions(string);
-                    await addFieldToWeekDocs(week, weeklyDietSuggestion);
+    // async function engineerPrompt(newResults) {
+    //     for (const week of weeks) {
+    //         var string = "";
+    //         if (week in newResults) {
+    //             if (!(week in weekSummaries)) {
+    //                 const weekMeals = newResults[week];
+    //                 for (let i = 0; i < weekMeals.length; i++) {
+    //                     const breakfast_listed = listOutFoods(weekMeals[i].Breakfast);
+    //                     const lunch_listed = listOutFoods(weekMeals[i].Lunch);
+    //                     const dinner_listed = listOutFoods(weekMeals[i].Dinner);
+    //                     string += `On ${weekMeals[i].day}, I had ${breakfast_listed} for breakfast. For lunch, I had ${lunch_listed}. For dinner, I had ${dinner_listed}. `;
+    //                 }
+    //                 string += "Generate me a five sentence detailing what improvements can be made to the user's diet.";
+    //                 var weeklyDietSuggestion = await generateSuggestions(string);
+    //                 await addFieldToWeekDocs(week, weeklyDietSuggestion);
+    //             }
+    //         }
+    //     };
+    // };
+
+    async function engineerPrompt(week) {
+        const isNotEmpty = weeklyResults && Object.keys(weeklyResults).length > 0;
+        var suggestion_string = "";
+        if (isNotEmpty) {
+            if (week in weeklyResults) {
+                const weekMeals = weeklyResults[week];
+                for (let i = 0; i < weekMeals.length; i++) {
+                    const breakfast_listed = listOutFoods(weekMeals[i].Breakfast);
+                    const lunch_listed = listOutFoods(weekMeals[i].Lunch);
+                    const dinner_listed = listOutFoods(weekMeals[i].Dinner);
+                    suggestion_string += `On ${weekMeals[i].day}, I had ${breakfast_listed} for breakfast. For lunch, I had ${lunch_listed}. For dinner, I had ${dinner_listed}. `;
                 }
-            }
-        };
-        console.log(weekSummaries["Jul 13, 2025 - Jul 19, 2025"])
-        console.log(weekSummaries["Jul 20, 2025 - Jul 26, 2025"])
-    };
-
-    const addFieldToWeekDocs = async (weekValue, suggestion) => {
-        if (user) {
-            try {
-                const q = query(collection(db, user.uid), where('week', '==', weekValue));
+                suggestion_string += "Generate me a five sentence diet recommendation detailing what improvements can be made to the user's diet.";
                 
-                const snapshot = await getDocs(q);
-
-                const updatePromises = snapshot.docs.map(doc => 
-                    updateDoc(doc.ref, {
-                        "suggestion": suggestion
-                    })
-                );
-
-                await Promise.all(updatePromises);
-            } catch (error) {
-
+                var weeklyDietSuggestion = await generateSuggestions(suggestion_string);
+                console.log(typeof weeklyDietSuggestion);
+                console.log(weeklyDietSuggestion);
+                return weeklyDietSuggestion;
             }
         }
-    }
+    };
 
     async function getAllWeeks() {
         let weeks = [];
@@ -298,6 +298,27 @@ const Dashboard = () => {
             }
         }
     };
+    
+    function checkIfTodayIsInDateRange(dateRangeStr) {
+        function stripTime(date) {
+            return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        }
+
+        const [startStr, endStr] = dateRangeStr.split(" - ");
+
+        const startDate = stripTime(new Date(startStr));
+        const endDate = stripTime(new Date(endStr));
+
+        const today = stripTime(new Date());
+
+        if (today < startDate) {
+            return "before";
+        } else if (today >= startDate && today <= endDate) {
+            return "inside";
+        } else {
+            return "past";
+        }
+    }
 
     const handleSignOut = () => {
         signOut(auth).then(() => {
@@ -323,7 +344,53 @@ const Dashboard = () => {
                 navigate("/");
             }
         });
+
     }, []);
+
+    useEffect(() => {
+        if (!user || weeks.length === 0) return;
+
+        const processWeeks = async () => {
+            for (const week of weeks) {
+                const status = checkIfTodayIsInDateRange(week);
+                if (status === "past") {
+                    if (await checkNoPromptForWeek(user.uid, week)) {
+                        const suggestion = await engineerPrompt(week);
+
+                        await addFieldToWeekDocuments(user.uid, week, "prompt", suggestion);
+                    }
+                }
+            }
+
+            await fetchKeyForWeek(user.uid).then((dict) => {
+                setAIResponses(dict);
+            })
+        };
+
+        processWeeks();
+
+    }, [weeks, user, weeklyResults, AIResponses]);
+
+    async function fetchKeyForWeek(collectionId) {
+        const docsRef = collection(db, collectionId);
+        const snapshot = await getDocs(docsRef);
+
+        const weeklySuggestions = {};
+
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const week = data.week;
+            const prompt = data.prompt;
+
+            if (week && prompt) {
+                if (!(week in weeklySuggestions)) {
+                    weeklySuggestions[week] = prompt;
+                }
+            }
+        })
+        
+        return weeklySuggestions;
+    }
 
     useEffect(() => {
         if (!user || weeks.length === 0) return;
@@ -349,6 +416,41 @@ const Dashboard = () => {
             unsubscribes.forEach((unsub) => unsub());
         };
     }, [user, weeks]);
+
+    async function checkNoPromptForWeek(collectionName, weekValue) {
+        const docsRef = collection(db, collectionName);
+        const q = query(docsRef, where("week", "==", weekValue));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            return true;
+        }
+
+        for (const doc of querySnapshot.docs) {
+            const data = doc.data();
+            if (data.hasOwnProperty("prompt") && data.prompt !== null && data.prompt !== "") {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    async function addFieldToWeekDocuments(collectionId, week, newKey, newValue) {
+        const collectionRef = collection(db, collectionId);
+        const q = query(collectionRef, where("week", "==", week));
+        
+        const querySnapshot = await getDocs(q);
+
+        const updatePromises = querySnapshot.docs.map((doc) => {
+            const docRef = doc.ref;
+            return updateDoc(docRef, {
+                [newKey]: newValue,
+            });
+        });
+
+        await Promise.all(updatePromises);
+    };
 
     const handleChange = (meal, index, value) => {
         let setter;
@@ -497,7 +599,7 @@ const Dashboard = () => {
                                     </Card>
                                 ))}
                             </Box>
-                            <Typography sx={{ marginLeft: '2em', textIndent: '2em' }}></Typography>
+                            <Typography sx={{ marginLeft: '2em', textIndent: '2em' }}>{AIResponses[week] || ""}</Typography>
 
                             <Dialog open={openDialog} onClose={closePopUp} aria-labelledby='dialog-title' fullWidth PaperProps={{ sx: { backgroundColor: themeMode === 'light' ? 'white' : 'rgb(10, 10, 10)' } }}>
                                 <DialogTitle id='dialog-title' aria-describedby='dialog-content' sx={{ textAlign: 'center', fontWeight: 600, fontSize: '1.25rem', color: themeMode === 'light' ? 'rgba(0, 0, 0, 1)' : 'white',}}>
