@@ -1,0 +1,36 @@
+async function addFieldToLargeCollection(collectionId, week, newKey, newValue) {
+  const collectionRef = collection(db, collectionId);
+  const q = query(collectionRef, where("week", "==", week));
+
+  try {
+    const querySnapshot = await getDocs(q);
+    const docs = querySnapshot.docs;
+
+    if (docs.length === 0) {
+      console.log("No matching documents found.");
+      return;
+    }
+    
+    // Create an array of promises, where each promise is a batch commit
+    const commitPromises = [];
+    
+    // Process documents in chunks of 500
+    for (let i = 0; i < docs.length; i += 500) {
+      const chunk = docs.slice(i, i + 500);
+      const batch = writeBatch(db);
+
+      chunk.forEach(docSnapshot => {
+        batch.update(docSnapshot.ref, { [newKey]: newValue });
+      });
+
+      commitPromises.push(batch.commit());
+    }
+
+    // Wait for all batch commits to finish
+    await Promise.all(commitPromises);
+    console.log(`Successfully updated ${docs.length} documents in multiple batches.`);
+
+  } catch (error) {
+    console.error("Error updating documents in batches: ", error);
+  }
+}
