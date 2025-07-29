@@ -38,8 +38,8 @@ const SignUpForm = ({theme}) => {
   }, [])
 
   useEffect(() => {
-    if (user && location.pathname !== '/dashboard') {
-      navigate('/dashboard');
+    if (user && location.pathname !== '/nutrition-tracker') {
+      navigate('/nutrition-tracker');
     }
   }, [user, navigate, location.pathname]);
 
