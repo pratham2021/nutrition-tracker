@@ -139,7 +139,7 @@ const Dashboard = () => {
                 url: "https://api.openai.com/v1/chat/completions",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${import.meta.env.VITE_OPEN_AI_API_KEY}`,
+                    Authorization: `Bearer ${process.env.OPEN_AI_API_KEY}`,
                 },
                 data: {
                     model: 'gpt-3.5-turbo',
