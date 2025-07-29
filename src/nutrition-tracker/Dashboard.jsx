@@ -417,6 +417,30 @@ const Dashboard = () => {
         };
     }, [user, weeks]);
 
+    useEffect(() => {
+        if (!user || weeks.length === 0) return;
+
+        const userCollectionRef = collection(db, user.uid);
+
+        const unsubscribe = onSnapshot(userCollectionRef, (snapshot) => {
+            const newWeeklyResults = {};
+
+            snapshot.docs.forEach(doc => {
+            const data = doc.data();
+            const week = data.week;
+
+            if (weeks.includes(week)) {
+                if (!newWeeklyResults[week]) newWeeklyResults[week] = [];
+                newWeeklyResults[week].push({ id: doc.id, ...data });
+            }
+            });
+
+            setWeeklyResults(newWeeklyResults);
+        });
+
+        return () => unsubscribe();
+    }, [user, weeks]);
+
     async function checkNoPromptForWeek(collectionName, weekValue) {
         const docsRef = collection(db, collectionName);
         const q = query(docsRef, where("week", "==", weekValue));
