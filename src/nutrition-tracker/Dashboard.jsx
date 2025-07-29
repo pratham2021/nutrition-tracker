@@ -359,12 +359,6 @@ const Dashboard = () => {
     };
 
     useEffect(() => {
-        if (user) {
-            getAllWeeks();
-        }
-    }, [user]);
-
-    useEffect(() => {
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 setUser(user);
@@ -452,22 +446,25 @@ const Dashboard = () => {
         const userCollectionRef = collection(db, user.uid);
 
         const unsubscribe = onSnapshot(userCollectionRef, (snapshot) => {
-            // We process document changes incrementally instead of rebuilding full state each time
-            snapshot.docChanges().forEach(change => {
-            if (change.type === "added") {
-                const newDoc = { id: change.doc.id, ...change.doc.data() };
-                setWeeklyResults(prev => {
-                // Add new doc to array
-                return [...prev, newDoc];
-                });
-            }
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === "added") {
+                    const newDoc = { id: change.doc.id, ...change.doc.data() };
+                    setWeeklyResults((prev = []) => {
+                        const exists = prev.some((doc) => doc.id === newDoc.id);
+                        return exists ? prev : [...prev, newDoc];
+                    });
+                }
 
-            if (change.type === "removed") {
-                const removedDocId = change.doc.id;
-                setWeeklyResults(prev => prev.filter(doc => doc.id !== removedDocId));
-            }
+                if (change.type === "removed") {
+                    const removedDocId = change.doc.id;
+                    setWeeklyResults((prev = []) => prev.filter((doc) => doc.id !== removedDocId));
+                }
             });
-        });
+        },
+        (error) => {
+            console.error("Firestore snapshot error:", error);
+        }
+        );
 
         return () => unsubscribe();
     }, [user]);
