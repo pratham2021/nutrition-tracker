@@ -22,10 +22,10 @@ jobs:
 
       - name: Build project
         env:
-          OPEN_AI_API_KEY: ${{ secrets.OPEN_AI_API_KEY }}  # Inject secret here
+          OPEN_AI_API_KEY: ${{ secrets.OPEN_AI_API_KEY }}
         run: npm run build
 
       - name: Deploy backend
         env:
-          OPEN_AI_API_KEY: ${{ secrets.OPEN_AI_API_KEY }}  # Inject secret here
+          OPEN_AI_API_KEY: ${{ secrets.OPEN_AI_API_KEY }}
         run: npm run deploy
