@@ -2,9 +2,9 @@ import React, { useState, useMemo } from "react";
 import SignUpForm from './components/SignUpForm.jsx';
 import SignInForm from "./components/SignInForm.jsx";
 import { AppBar, Button, Toolbar, Typography, Box, createTheme, CssBaseline, Stack, ThemeProvider} from '@mui/material';
-import logo_light from '/nutrition-tracker/smoothie-light.png';
-import toggle_dark from '/nutrition-tracker/day.png';
-import toggle_light from '/nutrition-tracker/night.png';
+import logo_light from '/smoothie-light.png';
+import toggle_dark from '/day.png';
+import toggle_light from '/night.png';
 
 
 function App() {

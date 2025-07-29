@@ -4,9 +4,9 @@ import { app, auth, db } from "../firebase.js";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, doc, setDoc, documentId, getDoc, getDocs, query, where, onSnapshot, updateDoc, writeBatch } from 'firebase/firestore';
-import logo_light from '/nutrition-tracker/smoothie-light.png';
-import toggle_dark from '/nutrition-tracker/day.png';
-import toggle_light from '/nutrition-tracker/night.png';
+import logo_light from '/smoothie-light.png';
+import toggle_dark from '/day.png';
+import toggle_light from '/night.png';
 import axios from 'axios';
 
 const Dashboard = () => {
