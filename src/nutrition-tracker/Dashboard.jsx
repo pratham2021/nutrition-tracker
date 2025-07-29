@@ -214,34 +214,63 @@ const Dashboard = () => {
         }
     };
 
-    async function getAllWeeks() {
-        let weeks = [];
+    useEffect(() => {
+        if (!user) return;
 
         const collectionReference = collection(db, user.uid);
 
-        try {
-            const snapshot = await getDocs(collectionReference);
-            
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                const week = data.week;
-                if (!weeks.includes(week)) {
-                    weeks.push(week);
-                }
-            });
-        }
-        catch (error) {
-            return;
-        }
+        const unsubscribe = onSnapshot(collectionReference, (snapshot) => {
+            const weeksSet = new Set();
 
-        let sortedWeeks = weeks.sort((a, b) => {
+            snapshot.docs.forEach((doc) => {
+            const data = doc.data();
+            if (data.week) {
+                weeksSet.add(data.week);
+            }
+            });
+
+            const weeksArray = Array.from(weeksSet);
+
+            weeksArray.sort((a, b) => {
             const startA = new Date(a.split(" - ")[0]);
             const startB = new Date(b.split(" - ")[0]);
             return startB - startA;
+            });
+
+            setWeeks(weeksArray);
         });
 
-        setWeeks(sortedWeeks);
-    };
+        return () => unsubscribe();
+    }, [user]);
+
+    // async function getAllWeeks() {
+    //     let weeks = [];
+
+    //     const collectionReference = collection(db, user.uid);
+
+    //     try {
+    //         const snapshot = await getDocs(collectionReference);
+            
+    //         snapshot.forEach((doc) => {
+    //             const data = doc.data();
+    //             const week = data.week;
+    //             if (!weeks.includes(week)) {
+    //                 weeks.push(week);
+    //             }
+    //         });
+    //     }
+    //     catch (error) {
+    //         return;
+    //     }
+
+    //     let sortedWeeks = weeks.sort((a, b) => {
+    //         const startA = new Date(a.split(" - ")[0]);
+    //         const startB = new Date(b.split(" - ")[0]);
+    //         return startB - startA;
+    //     });
+
+    //     setWeeks(sortedWeeks);
+    // };
 
     // update it if it exists but creates a document if it does exist
     const saveFoodDataToTheDatabase = async (week) => {
@@ -418,28 +447,31 @@ const Dashboard = () => {
     }, [user, weeks]);
 
     useEffect(() => {
-        if (!user || weeks.length === 0) return;
+        if (!user) return;
 
         const userCollectionRef = collection(db, user.uid);
 
         const unsubscribe = onSnapshot(userCollectionRef, (snapshot) => {
-            const newWeeklyResults = {};
+            // We process document changes incrementally instead of rebuilding full state each time
+            snapshot.docChanges().forEach(change => {
+            if (change.type === "added") {
+                const newDoc = { id: change.doc.id, ...change.doc.data() };
+                setWeeklyResults(prev => {
+                // Add new doc to array
+                return [...prev, newDoc];
+                });
+            }
 
-            snapshot.docs.forEach(doc => {
-            const data = doc.data();
-            const week = data.week;
-
-            if (weeks.includes(week)) {
-                if (!newWeeklyResults[week]) newWeeklyResults[week] = [];
-                newWeeklyResults[week].push({ id: doc.id, ...data });
+            if (change.type === "removed") {
+                const removedDocId = change.doc.id;
+                setWeeklyResults(prev => prev.filter(doc => doc.id !== removedDocId));
             }
             });
-
-            setWeeklyResults(newWeeklyResults);
         });
 
         return () => unsubscribe();
-    }, [user, weeks]);
+    }, [user]);
+
 
     async function checkNoPromptForWeek(collectionName, weekValue) {
         const docsRef = collection(db, collectionName);
