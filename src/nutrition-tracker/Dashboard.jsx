@@ -540,11 +540,12 @@ const Dashboard = () => {
         marginTop: 1,
         textTransform: 'none',
     };
-        
+    // #000000ff
+    // #121111ff
     return (
         <ThemeProvider theme={theme}>
                 <CssBaseline/>
-                <AppBar elevation={0} sx={{ bgcolor: themeMode === 'light' ? '#f4efefff' : '#000000', px: '56px', py: 0.5, height: '64px' }}>
+                <AppBar elevation={0} sx={{ bgcolor: themeMode === 'light' ? '#f4efefff' : '#121111ff', px: '56px', py: 0.5, height: '64px' }}>
                     <Toolbar sx={{ minHeight: '64px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Box>
                             <Stack direction="column" spacing={0.3} alignItems='center'>
