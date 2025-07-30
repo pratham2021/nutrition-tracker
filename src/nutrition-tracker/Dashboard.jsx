@@ -4,9 +4,9 @@ import { app, auth, db } from "../firebase.js";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, doc, setDoc, documentId, getDoc, getDocs, query, where, onSnapshot, updateDoc, writeBatch } from 'firebase/firestore';
-import logo_light from '/smoothie-light.png';
-import toggle_dark from '/day.png';
-import toggle_light from '/night.png';
+import logo_light from '../assets/smoothie-light.png';
+import toggle_dark from '../assets/day.png';
+import toggle_light from '../assets/night.png';
 import axios from 'axios';
 
 const Dashboard = () => {
@@ -92,6 +92,9 @@ const Dashboard = () => {
 
     const closePopUp = () => {
         setOpenDialog(false);
+        setBreakfastItems(['']);
+        setLunchItems(['']);
+        setDinnerItems(['']);
     };
     
     const toggleTheme = () => {
@@ -172,105 +175,57 @@ const Dashboard = () => {
         return `${allButLast}, and ${last}`;
     }
 
-    // async function engineerPrompt(newResults) {
-    //     for (const week of weeks) {
-    //         var string = "";
-    //         if (week in newResults) {
-    //             if (!(week in weekSummaries)) {
-    //                 const weekMeals = newResults[week];
-    //                 for (let i = 0; i < weekMeals.length; i++) {
-    //                     const breakfast_listed = listOutFoods(weekMeals[i].Breakfast);
-    //                     const lunch_listed = listOutFoods(weekMeals[i].Lunch);
-    //                     const dinner_listed = listOutFoods(weekMeals[i].Dinner);
-    //                     string += `On ${weekMeals[i].day}, I had ${breakfast_listed} for breakfast. For lunch, I had ${lunch_listed}. For dinner, I had ${dinner_listed}. `;
-    //                 }
-    //                 string += "Generate me a five sentence detailing what improvements can be made to the user's diet.";
-    //                 var weeklyDietSuggestion = await generateSuggestions(string);
-    //                 await addFieldToWeekDocs(week, weeklyDietSuggestion);
-    //             }
-    //         }
-    //     };
-    // };
-
-    async function engineerPrompt(week) {
-        const isNotEmpty = weeklyResults && Object.keys(weeklyResults).length > 0;
-        var suggestion_string = "";
-        if (isNotEmpty) {
-            if (week in weeklyResults) {
-                const weekMeals = weeklyResults[week];
-                for (let i = 0; i < weekMeals.length; i++) {
-                    const breakfast_listed = listOutFoods(weekMeals[i].Breakfast);
-                    const lunch_listed = listOutFoods(weekMeals[i].Lunch);
-                    const dinner_listed = listOutFoods(weekMeals[i].Dinner);
-                    suggestion_string += `On ${weekMeals[i].day}, I had ${breakfast_listed} for breakfast. For lunch, I had ${lunch_listed}. For dinner, I had ${dinner_listed}. `;
+    async function engineerPrompt(newResults) {
+        for (const week of weeks) {
+            var string = "";
+            if (week in newResults) {
+                if (!(week in weekSummaries)) {
+                    const weekMeals = newResults[week];
+                    for (let i = 0; i < weekMeals.length; i++) {
+                        const breakfast_listed = listOutFoods(weekMeals[i].Breakfast);
+                        const lunch_listed = listOutFoods(weekMeals[i].Lunch);
+                        const dinner_listed = listOutFoods(weekMeals[i].Dinner);
+                        string += `On ${weekMeals[i].day}, I had ${breakfast_listed} for breakfast. For lunch, I had ${lunch_listed}. For dinner, I had ${dinner_listed}. `;
+                    }
+                    string += "Generate me a five sentence detailing what improvements can be made to the user's diet.";
+                    return string;
                 }
-                suggestion_string += "Generate me a five sentence diet recommendation detailing what improvements can be made to the user's diet.";
-                
-                var weeklyDietSuggestion = await generateSuggestions(suggestion_string);
-                console.log(typeof weeklyDietSuggestion);
-                console.log(weeklyDietSuggestion);
-                return weeklyDietSuggestion;
             }
-        }
+        };
     };
 
-    useEffect(() => {
+    function getAllWeeks() {
+
         if (!user) return;
+
+        let weeks = [];
 
         const collectionReference = collection(db, user.uid);
 
         const unsubscribe = onSnapshot(collectionReference, (snapshot) => {
-            const weeksSet = new Set();
+            const weekSet = new Set();
 
-            snapshot.docs.forEach((doc) => {
-            const data = doc.data();
-            if (data.week) {
-                weeksSet.add(data.week);
-            }
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const week = data.week;
+                if (week) {
+                    weekSet.add(week);
+                }
             });
 
-            const weeksArray = Array.from(weeksSet);
+            const weeksArray = Array.from(weekSet);
 
-            weeksArray.sort((a, b) => {
-            const startA = new Date(a.split(" - ")[0]);
-            const startB = new Date(b.split(" - ")[0]);
-            return startB - startA;
+            const sortedWeeks = weeksArray.sort((a, b) => {
+                const startA = new Date(a.split(" - ")[0]);
+                const startB = new Date(b.split(" - ")[0]);
+                return startB - startA;
             });
 
-            setWeeks(weeksArray);
+            setWeeks(sortedWeeks);
         });
 
-        return () => unsubscribe();
-    }, [user]);
-
-    // async function getAllWeeks() {
-    //     let weeks = [];
-
-    //     const collectionReference = collection(db, user.uid);
-
-    //     try {
-    //         const snapshot = await getDocs(collectionReference);
-            
-    //         snapshot.forEach((doc) => {
-    //             const data = doc.data();
-    //             const week = data.week;
-    //             if (!weeks.includes(week)) {
-    //                 weeks.push(week);
-    //             }
-    //         });
-    //     }
-    //     catch (error) {
-    //         return;
-    //     }
-
-    //     let sortedWeeks = weeks.sort((a, b) => {
-    //         const startA = new Date(a.split(" - ")[0]);
-    //         const startB = new Date(b.split(" - ")[0]);
-    //         return startB - startA;
-    //     });
-
-    //     setWeeks(sortedWeeks);
-    // };
+        return unsubscribe;
+    };
 
     // update it if it exists but creates a document if it does exist
     const saveFoodDataToTheDatabase = async (week) => {
@@ -359,6 +314,14 @@ const Dashboard = () => {
     };
 
     useEffect(() => {
+        if (user) {
+            const unsubscribe = getAllWeeks();
+            return () => unsubscribe && unsubscribe();
+        }
+    }, [user]);
+
+
+    useEffect(() => {
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 setUser(user);
@@ -440,35 +403,15 @@ const Dashboard = () => {
         };
     }, [user, weeks]);
 
-    useEffect(() => {
-        if (!user) return;
-
-        const userCollectionRef = collection(db, user.uid);
-
-        const unsubscribe = onSnapshot(userCollectionRef, (snapshot) => {
-            snapshot.docChanges().forEach((change) => {
-                if (change.type === "added") {
-                    const newDoc = { id: change.doc.id, ...change.doc.data() };
-                    setWeeklyResults((prev = []) => {
-                        const exists = prev.some((doc) => doc.id === newDoc.id);
-                        return exists ? prev : [...prev, newDoc];
-                    });
-                }
-
-                if (change.type === "removed") {
-                    const removedDocId = change.doc.id;
-                    setWeeklyResults((prev = []) => prev.filter((doc) => doc.id !== removedDocId));
-                }
-            });
-        },
-        (error) => {
-            console.error("Firestore snapshot error:", error);
-        }
-        );
-
-        return () => unsubscribe();
-    }, [user]);
-
+    // useEffect(() => {
+    //     if (!user) return;
+    //     const collectionRef = collection(db, user.uid);
+    //     const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
+    //         const docs = snapshot.docs.map((doc) => doc.data());
+    //         setAllDocuments(docs);
+    //     });
+    //     return () => unsubscribe();
+    // }, [user]);
 
     async function checkNoPromptForWeek(collectionName, weekValue) {
         const docsRef = collection(db, collectionName);
@@ -558,6 +501,9 @@ const Dashboard = () => {
         saveFoodDataToTheDatabase(week);
         console.log("Closing...");
         closePopUp();
+        setBreakfastItems(['']);
+        setLunchItems(['']);
+        setDinnerItems(['']);
     };
 
     const inputSx = {
