@@ -121,9 +121,23 @@ const Dashboard = () => {
         return { start, end };
     };
 
-    // const [weekSummaries, setWeeklySummaries] = useState({});
+    async function getAPIKey() {
+        if (!user) return;
+        const docRef = doc(db, "keys", "SECRET_KEY");
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            const apiKey = data.secret_key;
+            return apiKey;
+        } else {
+            return null;
+        }
+    };
 
     const generateSuggestions = async (prompt) => {
+        const apiKey = await getAPIKey();
+
         const msg = [
             {
                 role: "system",
@@ -142,7 +156,7 @@ const Dashboard = () => {
                 url: "https://api.openai.com/v1/chat/completions",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${process.env.OPEN_AI_API_KEY}`,
+                    Authorization: `Bearer ${apiKey}`,
                 },
                 data: {
                     model: 'gpt-3.5-turbo',
@@ -153,7 +167,6 @@ const Dashboard = () => {
                 },
             });
 
-            // console.log(response.data.choices[0].message.content);
             return response.data.choices[0].message.content || "";
         } catch (error) {
             console.log("Something went wrong. Couldn't fetch you a response.")
