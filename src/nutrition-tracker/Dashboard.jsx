@@ -540,8 +540,7 @@ const Dashboard = () => {
         marginTop: 1,
         textTransform: 'none',
     };
-    // #000000ff
-    // #121111ff
+
     return (
         <ThemeProvider theme={theme}>
                 <CssBaseline/>
