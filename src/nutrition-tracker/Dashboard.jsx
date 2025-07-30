@@ -240,7 +240,6 @@ const Dashboard = () => {
         return unsubscribe;
     };
 
-    // update it if it exists but creates a document if it does exist
     const saveFoodDataToTheDatabase = async (week) => {
         if (user) {
             const collectionId = user.uid;
