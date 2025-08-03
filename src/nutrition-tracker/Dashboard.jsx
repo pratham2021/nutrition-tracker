@@ -189,16 +189,20 @@ const Dashboard = () => {
     }
 
     async function engineerPrompt(newWeek) {
-        const weekMeals = weeklyResults[newWeek];
+        if (weeklyResults.length === 0) {
+            return;
+        }
+
         var string = "";
-        for (let i = 0; i < weekMeals.length; i++) {
+        const weekMeals = weeklyResults[newWeek];
+        for (var i = 0; i < weekMeals.length; i++) {
             const breakfast_listed = listOutFoods(weekMeals[i].Breakfast);
             const lunch_listed = listOutFoods(weekMeals[i].Lunch);
             const dinner_listed = listOutFoods(weekMeals[i].Dinner);
             string += `On ${weekMeals[i].day}, I had ${breakfast_listed} for breakfast. For lunch, I had ${lunch_listed}. For dinner, I had ${dinner_listed}. `;
         }
-        string += "Generate me a five sentence detailing what improvements can be made to the user's diet.";
-        const suggestion = generateSuggestions(string);
+        string += "Generate me five complete sentences detailing what improvements can be made to the user's diet.";
+        const suggestion = await generateSuggestions(string);
         return suggestion;
     };
 
@@ -351,17 +355,13 @@ const Dashboard = () => {
             for (const week of weeks) {
                 const status = checkIfTodayIsInDateRange(week);
                 if (status === "past") {
-                    if (await checkNoPromptForWeek(user.uid, week)) {
+                    const promptPresent = await doAllDocsHavePrompt(user.uid, week);
+                    if (!(week in AIResponses) && !promptPresent) {
                         const suggestion = await engineerPrompt(week);
-
                         await addFieldToWeekDocuments(user.uid, week, "prompt", suggestion);
                     }
                 }
-            }
-
-            await fetchKeyForWeek(user.uid).then((dict) => {
-                setAIResponses(dict);
-            })         
+            }    
         };
 
         processWeeks();
@@ -399,7 +399,12 @@ const Dashboard = () => {
             const q = query(collectionReference, where("week", "==", week));
 
             const unsubscribe = onSnapshot(q, (querySnapshot) => {
-                const docs = querySnapshot.docs.map((doc) => doc.data());
+                const docs = querySnapshot.docs.map((doc) => doc.data()).sort((a, b) => {
+                    const dateA = new Date(a.day);
+                    const dateB = new Date(b.day);
+                    return dateA - dateB;
+                });;
+
                 setWeeklyResults((prev) => {
                     const newResults = { ...prev, [week]: docs };
                     return newResults;
@@ -424,23 +429,23 @@ const Dashboard = () => {
     //     return () => unsubscribe();
     // }, [user]);
 
-    async function checkNoPromptForWeek(collectionName, weekValue) {
-        const docsRef = collection(db, collectionName);
-        const q = query(docsRef, where("week", "==", weekValue));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-            return true;
-        }
-
-        for (const doc of querySnapshot.docs) {
-            const data = doc.data();
-            if (data.hasOwnProperty("prompt") && data.prompt !== null && data.prompt !== "") {
-                return false;
+    async function doAllDocsHavePrompt(collectionName, weekValue) {
+        try {
+            const docsRef = collection(db, collectionName);
+            const q = query(docsRef, where("week", "==", weekValue));
+            const querySnapshot = await getDocs(q);
+            if (querySnapshot.empty) return false;
+            for (const doc of querySnapshot.docs) {
+                const data = doc.data();
+                if (!data.hasOwnProperty("prompt")) {
+                    return false;
+                }
             }
-        }
 
-        return true;
+            return true;
+        } catch (error) {
+            console.log(error);
+        }
     };
 
     async function addFieldToWeekDocuments(collectionId, week, newKey, newValue) {
