@@ -188,23 +188,18 @@ const Dashboard = () => {
         return `${allButLast}, and ${last}`;
     }
 
-    async function engineerPrompt(newResults) {
-        for (const week of weeks) {
-            var string = "";
-            if (week in newResults) {
-                if (!(week in weekSummaries)) {
-                    const weekMeals = newResults[week];
-                    for (let i = 0; i < weekMeals.length; i++) {
-                        const breakfast_listed = listOutFoods(weekMeals[i].Breakfast);
-                        const lunch_listed = listOutFoods(weekMeals[i].Lunch);
-                        const dinner_listed = listOutFoods(weekMeals[i].Dinner);
-                        string += `On ${weekMeals[i].day}, I had ${breakfast_listed} for breakfast. For lunch, I had ${lunch_listed}. For dinner, I had ${dinner_listed}. `;
-                    }
-                    string += "Generate me a five sentence detailing what improvements can be made to the user's diet.";
-                    return string;
-                }
-            }
-        };
+    async function engineerPrompt(newWeek) {
+        const weekMeals = weeklyResults[newWeek];
+        var string = "";
+        for (let i = 0; i < weekMeals.length; i++) {
+            const breakfast_listed = listOutFoods(weekMeals[i].Breakfast);
+            const lunch_listed = listOutFoods(weekMeals[i].Lunch);
+            const dinner_listed = listOutFoods(weekMeals[i].Dinner);
+            string += `On ${weekMeals[i].day}, I had ${breakfast_listed} for breakfast. For lunch, I had ${lunch_listed}. For dinner, I had ${dinner_listed}. `;
+        }
+        string += "Generate me a five sentence detailing what improvements can be made to the user's diet.";
+        const suggestion = generateSuggestions(string);
+        return suggestion;
     };
 
     function getAllWeeks() {
@@ -349,6 +344,10 @@ const Dashboard = () => {
         if (!user || weeks.length === 0) return;
 
         const processWeeks = async () => {
+            await fetchKeyForWeek(user.uid).then((dict) => {
+                setAIResponses(dict);
+            })
+
             for (const week of weeks) {
                 const status = checkIfTodayIsInDateRange(week);
                 if (status === "past") {
@@ -362,7 +361,7 @@ const Dashboard = () => {
 
             await fetchKeyForWeek(user.uid).then((dict) => {
                 setAIResponses(dict);
-            })
+            })         
         };
 
         processWeeks();
