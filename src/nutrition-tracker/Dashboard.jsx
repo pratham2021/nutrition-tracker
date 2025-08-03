@@ -350,20 +350,22 @@ const Dashboard = () => {
         if (!user || weeks.length === 0) return;
 
         const processWeeks = async () => {
-            await fetchKeyForWeek(user.uid).then((dict) => {
-                setAIResponses(dict);
-            })
-
+            const existingResponses = await fetchKeyForWeek(user.uid);
+            const updatedResponses = { ...existingResponses };
             for (const week of weeks) {
                 const status = checkIfTodayIsInDateRange(week);
                 if (status === "past") {
-                    const promptPresent = await doAllDocsHavePrompt(user.uid, week);
-                    if (!(week in AIResponses) && !promptPresent) {
-                        const suggestion = await engineerPrompt(week);
-                        await addFieldToWeekDocuments(user.uid, week, "prompt", suggestion);
+                const promptPresent = await doAllDocsHavePrompt(user.uid, week);
+                if (!(week in updatedResponses) && !promptPresent) {
+                    const suggestion = await engineerPrompt(week);
+                    if (suggestion) {
+                    await addFieldToWeekDocuments(user.uid, week, "prompt", suggestion);
+                    updatedResponses[week] = suggestion; 
                     }
                 }
-            }    
+                }
+            }
+            setAIResponses(updatedResponses);
         };
 
         processWeeks();
