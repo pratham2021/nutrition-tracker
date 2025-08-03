@@ -14,7 +14,6 @@ const Dashboard = () => {
     const [user, setUser] = useState(null);
     const [themeMode, setThemeMode] = useState('light');
     const navigate = useNavigate();
-    const items = Array.from({ length: 20 }, (_, i) => `Card ${1}`);
 
     const [openDialog, setOpenDialog] = useState(false);
     const [errors, setErrors] = useState();
@@ -256,6 +255,9 @@ const Dashboard = () => {
 
             if (hasEmptyItem(breakfastItems) || hasEmptyItem(lunchItems) || hasEmptyItem(dinnerItems)) {
                 setErrors("One or more items are left blank.");
+                setSnackBarOpen(true);
+                setSnackBarMessage(`Error saving entry to the database: ${e.message}`);
+                setSnackBarSeverity("error");
                 return;
             }
 
