@@ -17,6 +17,7 @@ const Dashboard = () => {
 
     const [openDialog, setOpenDialog] = useState(false);
     const [errors, setErrors] = useState();
+    const items = Array.from({ length: 7 }, (_, i) => `Card ${1}`);
 
     const [snackBarOpen, setSnackBarOpen] = useState(false);
     const [snackBarMessage, setSnackBarMessage] = useState("");
