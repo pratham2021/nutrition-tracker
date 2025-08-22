@@ -371,7 +371,7 @@ const Dashboard = () => {
                         if (!(week in updatedResponses) && !promptPresent) {
                             const suggestion = await engineerPrompt(week);
                             if (suggestion) {
-                                await addFieldToWeekDocumentsDocuments(user.uid, week, "prompt", suggestion);
+                                await addFieldToWeekDocuments(user.uid, week, "prompt", suggestion);
                                 updatedResponses[week] = suggestion;
                                 hasUpdates = true;
                             }
