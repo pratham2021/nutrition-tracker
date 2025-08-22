@@ -358,6 +358,9 @@ const Dashboard = () => {
 
                 for (const week of weeks) {
                     const status = checkIfTodayIsInDateRange(week);
+                    
+                    console.log(`Week ${week} status: ${status}`)
+
                     if (status === "past") { 
                         const weekMeals = weeklyResults[week];
 
