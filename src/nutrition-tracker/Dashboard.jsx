@@ -348,34 +348,47 @@ const Dashboard = () => {
     }, []);
 
     useEffect(() => {
-        if (!user || weeks.length === 0) return;
+        if (!user || weeks.length == 0) return;
 
         const processWeeks = async () => {
             try {
-                const existingResponses = await fetchKeyForWeek(user.uid);
+                const existingResponses = await await fetchKeyForWeek(user.uid);
                 const updatedResponses = { ...existingResponses };
+                let hasUpdates = false;
+
                 for (const week of weeks) {
                     const status = checkIfTodayIsInDateRange(week);
-                    if (status === "past") {
+                    if (status === "past") { 
+                        const weekMeals = weeklyResults[week];
+
+                        if (!weekMeals || weekMeals.length === 0) {
+                            console.log(`No weekly results available for ${week}`);
+                            continue;
+                        }
+
                         const promptPresent = await doAllDocsHavePrompt(user.uid, week);
+                        
                         if (!(week in updatedResponses) && !promptPresent) {
                             const suggestion = await engineerPrompt(week);
                             if (suggestion) {
-                                await addFieldToWeekDocuments(user.uid, week, "prompt", suggestion);
-                                updatedResponses[week] = suggestion; 
+                                await addFieldToWeekDocumentsDocuments(user.uid, week, "prompt", suggestion);
+                                updatedResponses[week] = suggestion;
+                                hasUpdates = true;
                             }
                         }
                     }
                 }
-                setAIResponses(updatedResponses);
+
+                if (hasUpdates || Object.keys(updatedResponses).length !== Object.keys(AIResponses).length) {
+                    setAIResponses(updatedResponses);
+                }
+
             } catch (error) {
-                console.log("Error processing weeks and AI responses:", error);
+                console.log("Error processing weeks and AI responses: ", error);
             }
         };
-
         processWeeks();
-
-    }, [weeks, user, weeklyResults, AIResponses]);
+    }, [weeks, user, weeklyResults]);
 
     async function fetchKeyForWeek(collectionId) {
         const docsRef = collection(db, collectionId);
@@ -562,7 +575,7 @@ const Dashboard = () => {
                         <Box>
                             <Stack direction="column" spacing={0.3} alignItems='center'>
                                 <img src={logo_light} alt="logo" style={{ width: '36px', height: '36px', filter: themeMode === 'light' ? 'none' : 'brightness(0) invert(1)', cursor: 'pointer',}}/>
-                        
+        
                                 <Typography variant="h6" component="div" sx={{ fontSize: '1rem', color: themeMode === 'light' ? 'black': 'white', mt: '0px', fontWeight: 550, textAlign: 'center' }}>
                                     NutriLife
                                 </Typography>
