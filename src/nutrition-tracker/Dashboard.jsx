@@ -441,16 +441,6 @@ const Dashboard = () => {
         };
     }, [user, weeks]);
 
-    // useEffect(() => {
-    //     if (!user) return;
-    //     const collectionRef = collection(db, user.uid);
-    //     const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
-    //         const docs = snapshot.docs.map((doc) => doc.data());
-    //         setAllDocuments(docs);
-    //     });
-    //     return () => unsubscribe();
-    // }, [user]);
-
     async function doAllDocsHavePrompt(collectionName, weekValue) {
         try {
             const docsRef = collection(db, collectionName);
